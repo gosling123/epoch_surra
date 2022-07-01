@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 from time import time
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -29,6 +27,7 @@ class epoch_plotter:
         self.epoch_data.read_data()
         self.epoch_data.get_spatio_temporal()
         self.epoch_data.get_plasma_param()
+        self.epoch_data.get_matching_conds()
 
     def density_plot(self):
 
@@ -39,17 +38,23 @@ class epoch_plotter:
         ne = self.epoch_data.ne_data/self.epoch_data.critical_density
 
         plt.plot(x, ne, label = 'Grid Data', linewidth = 1)
-        plt.plot(x, nfunc, label = '$L_n = '+ str(np.round(Ln, decimals=0)) + ' \, \mu m $')
+#         plt.plot(x, nfunc, label = '$L_n = '+ str(np.round(Ln, decimals=0)) + ' \, \mu m $')
         plt.xlabel(r'x ($\mu$m)', fontsize = 20)
         plt.ylabel(r'$\frac{n_e}{n_c}$', fontsize = 20)
         plt.gcf().set_size_inches(16,8)
         plt.legend()
         plt.show()
 
-    def dispersion_2D_plot(self, data, case):
+    def dispersion_2D_plot(self, field):
 
-        vmax = np.max(data)
-        vmin = vmax*1e-6
+        data = self.epoch_fields.get_2D_FFT(field = field, square_mod = True)
+
+        if field == 'Ey':
+            vmax = np.max(data)
+            vmin = vmax*1e-8
+        else:
+            vmax = np.max(data)
+            vmin = vmax*1e-8
 
         ### FFT PLOT
         fig = plt.figure()
@@ -59,31 +64,40 @@ class epoch_plotter:
         ### CBAR TO GET CURRENT AXIS
         cbar = plt.colorbar(FFT, ax = plt.gca())
 
-        if case == 'Ex':
+        if field == 'Ex':
             cbar.set_label(r'$\left|E_x\right|^2$', x = 0.0, y = 0.5, rotation=0, fontsize=20)
-        elif case == 'Ey':
+        elif field == 'Ey':
             cbar.set_label(r'$\left|E_y\right|^2$', x = 0.0, y = 0.5, rotation=0, fontsize=20)
-        elif case == 'Bz':
+        elif field == 'Bz':
             cbar.set_label(r'$\left|B_z\right|^2$', x = 0.0, y = 0.5, rotation=0, fontsize=20)
         else:
             cbar.set_label(r'$\left|2D FFT\right|^2$', x = 0.0, y = 0.5, rotation=90, fontsize=20)
  
 
+        if field == 'Ex':
 
-        plt.xlim(0,  self.epoch_data.k_space.max())
-        plt.ylim(0.0, self.epoch_data.omega_space.max())
+            plt.xlim(0,  2)
+            plt.ylim(0.0, self.epoch_data.omega_space.max())
+        else:
+            plt.xlim(-1.2, 1.2)
+            plt.ylim(0, self.epoch_data.omega_space.max())
+        
         plt.xlabel(r'k/k0', fontsize = 20)
         plt.ylabel(r'$\omega/\omega_0$', fontsize = 20)
 
 
-        if case == 'Ex':
+        if field == 'Ex':
             ### DISPERISON PLOT
             k_disp = np.linspace(-2, 2, self.epoch_data.nx)
-            plt.plot(k_disp, dispersion_EPW(k_disp * self.epoch_data.k0_vac, self.epoch_data.ne_data, self.epoch_data.v_th) / self.epoch_data.frequency, 'white', linestyle='-', label = 'Bohm-Gross')
-            plt.plot(k_disp, (1/3)*np.linspace(0,1, self.epoch_data.nx), 'red', linestyle='-', label = 'Bohm-Gross (min)')
-            plt.plot(k_disp, dispersion_EPW(k_disp * self.epoch_data.k0_vac, self.epoch_data.ne_max, self.epoch_data.v_th) / self.epoch_data.frequency, 'red', linestyle='-', label = 'Bohm-Gross (max)')
-            plt.plot(k_disp, dispersion_Stokes(k_disp*self.epoch_data.k0_vac, self.epoch_data.k0_vac, self.epoch_data.ne_data, self.epoch_data.frequency) / self.epoch_data.frequency, 'blue', linestyle='-', label = 'Stokes')
+            plt.plot(k_disp, dispersion_EPW(k_disp * self.epoch_data.k0_vac, np.average(self.epoch_data.ne_data), self.epoch_data.v_th) / self.epoch_data.omega0, 'white', linestyle='-', label = 'Bohm-Gross')
+            plt.plot(k_disp, dispersion_Stokes(k_disp*self.epoch_data.k0_vac, self.epoch_data.k0_vac, np.average(self.epoch_data.ne_data), self.epoch_data.omega0) / self.epoch_data.omega0, 'blue', linestyle='-', label = 'Stokes')
             plt.legend(fontsize = 20)
+            
+        if field == 'Ey':
+            plt.plot(self.epoch_data.k_bs_norm, self.epoch_data.omega_bs_norm, marker = 'x', markersize = 16, color = 'white', alpha = 0.85)
+            plt.plot(self.epoch_data.k_fs_norm, self.epoch_data.omega_fs_norm, marker = 'x', markersize = 16, color = 'white', alpha = 0.85)
+            plt.plot(self.epoch_data.k0/self.epoch_data.k0_vac, 1.0, marker = 'x', markersize = 16, color = 'white', alpha = 0.85)
+        
         plt.title('Time passed = ' + str(np.round(self.epoch_data.t_end*1e12, decimals=2)) + 'ps', fontsize =20)
         plt.tick_params(labelsize=20)
         plt.gcf().set_size_inches(16,8)
