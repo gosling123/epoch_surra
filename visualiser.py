@@ -1,4 +1,9 @@
-from time import time
+## @package visualiser
+# Documentation for visualiser module
+#
+# The visualiser module houses functions which are used to perform
+# plotting routines on epoch data.
+
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 from matplotlib import cm
@@ -16,12 +21,18 @@ plt.rcParams['ytick.labelsize'] = 14
 plt.rcParams['legend.fontsize'] = 14
 
 
-
+## epoch_plotter Class.
+#
+# Class that contains plotting routines that are oten used. 
 class epoch_plotter:
 
+    ## __init__
+    #
+    # The constructor
+    # @param self : The object pointer
+    # @param dir : Directory where data is stored (str)
     def __init__(self, dir):
         self.directory = dir+'/'
-
         self.epoch_data = Laser_Plasma_Params(dir)
         self.epoch_fields = EM_fields(dir)
         self.epoch_data.read_data()
@@ -29,8 +40,11 @@ class epoch_plotter:
         self.epoch_data.get_plasma_param()
         self.epoch_data.get_matching_conds()
 
+    ## density_plot
+    #
+    # Plots the number desnity over space
+    # @param self : The object pointer
     def density_plot(self):
-
         x = self.epoch_data.nodes
         ne_min = self.epoch_data.ne_min/self.epoch_data.critical_density
         Ln = self.epoch_data.Ln
@@ -38,13 +52,18 @@ class epoch_plotter:
         ne = self.epoch_data.ne_data/self.epoch_data.critical_density
 
         plt.plot(x, ne, label = 'Grid Data', linewidth = 1)
-#         plt.plot(x, nfunc, label = '$L_n = '+ str(np.round(Ln, decimals=0)) + ' \, \mu m $')
+        plt.plot(x, nfunc, label = '$L_n = '+ str(np.round(Ln, decimals=0)) + ' \, \mu m $')
         plt.xlabel(r'x ($\mu$m)', fontsize = 20)
         plt.ylabel(r'$\frac{n_e}{n_c}$', fontsize = 20)
         plt.gcf().set_size_inches(16,8)
         plt.legend()
         plt.show()
 
+    ## dispersion_2D_plot
+    #
+    # Plots 2D FFT of the fields
+    # @param self : The object pointer
+    # @param field : EM Field to FFT (inputs are either 'Ex', 'Ey', 'Bz')
     def dispersion_2D_plot(self, field):
 
         data = self.epoch_fields.get_2D_FFT(field = field, square_mod = True)
@@ -104,33 +123,7 @@ class epoch_plotter:
 
         plt.show()
 
-    def backscatter_flux_plot(self, reflectivity = False):
 
-        time = np.linspace(0, self.epoch_data.t_end, self.epoch_data.timesteps) * 1e12
-
-        if reflectivity:
-
-            res = self.epoch_fields.get_backscat_poynting(time_averaged =False, reflectivity= True)
-            
-            fig, ax = plt.subplots(figsize=(15,15))
-            ax.plot(time, res, label = 'Reflectivity')
-            ax.set_xlabel(r'Time (ps)')
-            ax.set_ylabel(r'$P0$')
-            ax.legend()
-
-            plt.show()
-
-        else:
-
-            res = self.epoch_fields.get_backscat_poynting(time_averaged =False, reflectivity= False)
-            
-            fig, ax = plt.subplots(figsize=(8,8))
-            ax.plot(time, res, label = 'Backscatterd SRS')
-            ax.set_xlabel(r'Time (ps)')
-            ax.set_ylabel(r'$\langle I_{SRS} \rangle (W/cm^2)$')
-            ax.legend()
-
-            plt.show()
 
 
 

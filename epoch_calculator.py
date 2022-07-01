@@ -11,12 +11,11 @@ from nbformat import read
 import numpy as np
 import sdf
 from scipy import constants
-from scipy.optimize import brentq, bisect
+from scipy.optimize import brentq
 import glob
 from utils import *
-from scipy.fftpack import fft, ifft
+from scipy.fftpack import fft
 import matplotlib.pyplot as plt
-from scipy.optimize import brentq, bisect
 from scipy.ndimage import uniform_filter1d
 
 plt.rcParams["figure.figsize"] = (20,3)
