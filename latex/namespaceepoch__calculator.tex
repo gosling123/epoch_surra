@@ -1,0 +1,226 @@
+\doxysection{epoch\+\_\+calculator Namespace Reference}
+\label{namespaceepoch__calculator}\index{epoch\_calculator@{epoch\_calculator}}
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \textbf{ dist\+\_\+f}
+\begin{DoxyCompactList}\small\item\em \doxyref{dist\+\_\+f}{p.}{classepoch__calculator_1_1dist__f} Class. \end{DoxyCompactList}\item 
+class \textbf{ E\+M\+\_\+fields}
+\begin{DoxyCompactList}\small\item\em \doxyref{E\+M\+\_\+fields}{p.}{classepoch__calculator_1_1_e_m__fields} Class. \end{DoxyCompactList}\item 
+class \textbf{ Laser\+\_\+\+Plasma\+\_\+\+Params}
+\begin{DoxyCompactList}\small\item\em \doxyref{Laser\+\_\+\+Plasma\+\_\+\+Params}{p.}{classepoch__calculator_1_1_laser___plasma___params} Class. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \textbf{ winsinc\+F\+IR} (omega\+\_\+c, omega\+\_\+s, M)
+\begin{DoxyCompactList}\small\item\em winsinc\+F\+IR \end{DoxyCompactList}\item 
+def \textbf{ bandpass} (w0, bw, omega\+\_\+s, M)
+\begin{DoxyCompactList}\small\item\em bandpass \end{DoxyCompactList}\item 
+def \textbf{ moving\+\_\+av} (Q, span, period=10)
+\begin{DoxyCompactList}\small\item\em moving\+\_\+av \end{DoxyCompactList}\item 
+def \textbf{ plasmon} (ne)
+\begin{DoxyCompactList}\small\item\em plasmon \end{DoxyCompactList}\item 
+def \textbf{ dispersion\+\_\+\+Stokes} (k, k0, ne, omega0)
+\begin{DoxyCompactList}\small\item\em dispersion\+\_\+\+Stokes \end{DoxyCompactList}\item 
+def \textbf{ dispersion\+\_\+\+E\+PW} (k, ne, v\+\_\+th)
+\begin{DoxyCompactList}\small\item\em dispersion\+\_\+\+E\+PW \end{DoxyCompactList}\item 
+def \textbf{ dispersion\+\_\+\+EM} (k, ne)
+\begin{DoxyCompactList}\small\item\em dispersion\+\_\+\+EM \end{DoxyCompactList}\item 
+def \textbf{ srs\+\_\+matching} (k, k0, ne, v\+\_\+th, omega0)
+\begin{DoxyCompactList}\small\item\em srs\+\_\+matching \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\label{namespaceepoch__calculator_ab3803cc3366feff5a5cc38b054629852}} 
+{\bfseries c} = constants.\+c
+\item 
+\mbox{\label{namespaceepoch__calculator_abf10ebcf5dc3c3d782393dfda28b3c1c}} 
+{\bfseries eps0} = constants.\+epsilon\+\_\+0
+\item 
+\mbox{\label{namespaceepoch__calculator_ab438b91aa49eb9eba2c2a1d086af227b}} 
+{\bfseries me} = constants.\+m\+\_\+e
+\item 
+\mbox{\label{namespaceepoch__calculator_a4e6b6a50b0eabc64e73763a7a929b3e9}} 
+{\bfseries e} = constants.\+e
+\item 
+\mbox{\label{namespaceepoch__calculator_a48c05a7c863724a82b8f669ce4d8d550}} 
+{\bfseries kB} = constants.\+k
+\item 
+\mbox{\label{namespaceepoch__calculator_acf95cfa1189b31dc8c28f35e63bfabb4}} 
+tuple {\bfseries ke\+V\+\_\+to\+\_\+K} = (e$\ast$1e3)/kB
+\item 
+\mbox{\label{namespaceepoch__calculator_a99ee5c10a31602f439e6519700c7dd5b}} 
+{\bfseries mu0} = constants.\+mu\+\_\+0
+\item 
+\mbox{\label{namespaceepoch__calculator_ab107fb8b505e63cec940f317967cec00}} 
+{\bfseries pi} = np.\+pi
+\item 
+\mbox{\label{namespaceepoch__calculator_ae28d2d2c47df4d95892e64f08a31e967}} 
+int {\bfseries pico} = 1e-\/12
+\item 
+\mbox{\label{namespaceepoch__calculator_aa5c71865f28ccfe0058abc91c54be199}} 
+int {\bfseries micron} = 1e-\/6
+\item 
+\mbox{\label{namespaceepoch__calculator_a35771aa67a070597eaab9ee006867fe9}} 
+int {\bfseries nano} = 1e-\/9
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Documentation for \doxyref{epoch\+\_\+calculator}{p.}{namespaceepoch__calculator} module
+
+The epoch\+\_\+calaculator module reads the E\+P\+O\+CH data files and calculates several parameters. There are three classes, one which handles the calculations from grid quantities (\doxyref{Laser\+\_\+\+Plasma\+\_\+\+Params}{p.}{classepoch__calculator_1_1_laser___plasma___params}), field quantities (E\+M\+\_\+fileds) and the momentum distribution function (\doxyref{dist\+\_\+f}{p.}{classepoch__calculator_1_1dist__f}). 
+
+\doxysubsection{Function Documentation}
+\mbox{\label{namespaceepoch__calculator_aa3d362b7c35d52ce8374a9247467394c}} 
+\index{epoch\_calculator@{epoch\_calculator}!bandpass@{bandpass}}
+\index{bandpass@{bandpass}!epoch\_calculator@{epoch\_calculator}}
+\doxysubsubsection{bandpass()}
+{\footnotesize\ttfamily def epoch\+\_\+calculator.\+bandpass (\begin{DoxyParamCaption}\item[{}]{w0,  }\item[{}]{bw,  }\item[{}]{omega\+\_\+s,  }\item[{}]{M }\end{DoxyParamCaption})}
+
+
+
+bandpass 
+
+Create a band-\/pass filter by convolving a high-\/pass and a low-\/pass filter 
+\begin{DoxyParams}{Parameters}
+{\em w0} & \+: central frequency you want to filter around (fraction of omega0) \\
+\hline
+{\em bw} & \+: total bandwidth of your filter (fraction of omega0) \\
+\hline
+{\em M} & \+: half filter length (must be odd) \\
+\hline
+\end{DoxyParams}
+\mbox{\label{namespaceepoch__calculator_ab4605a0d31972b7217bcdd10d694c664}} 
+\index{epoch\_calculator@{epoch\_calculator}!dispersion\_EM@{dispersion\_EM}}
+\index{dispersion\_EM@{dispersion\_EM}!epoch\_calculator@{epoch\_calculator}}
+\doxysubsubsection{dispersion\_EM()}
+{\footnotesize\ttfamily def epoch\+\_\+calculator.\+dispersion\+\_\+\+EM (\begin{DoxyParamCaption}\item[{}]{k,  }\item[{}]{ne }\end{DoxyParamCaption})}
+
+
+
+dispersion\+\_\+\+EM 
+
+EM wave in plasama dipersion relation 
+\begin{DoxyParams}{Parameters}
+{\em k} & \+: EM wavenumber in plasma \\
+\hline
+{\em ne} & \+: Electron number density \\
+\hline
+\end{DoxyParams}
+\mbox{\label{namespaceepoch__calculator_a724403ae45795455aa226c241105dcbb}} 
+\index{epoch\_calculator@{epoch\_calculator}!dispersion\_EPW@{dispersion\_EPW}}
+\index{dispersion\_EPW@{dispersion\_EPW}!epoch\_calculator@{epoch\_calculator}}
+\doxysubsubsection{dispersion\_EPW()}
+{\footnotesize\ttfamily def epoch\+\_\+calculator.\+dispersion\+\_\+\+E\+PW (\begin{DoxyParamCaption}\item[{}]{k,  }\item[{}]{ne,  }\item[{}]{v\+\_\+th }\end{DoxyParamCaption})}
+
+
+
+dispersion\+\_\+\+E\+PW 
+
+Electron Plasma wave dispersion realtion -\/ Bohm-\/\+Gross 
+\begin{DoxyParams}{Parameters}
+{\em k} & \+: E\+PW wavenumber in plasma \\
+\hline
+{\em ne} & \+: Electron number density \\
+\hline
+{\em v\+\_\+th} & \+: Electron thermal velocity \\
+\hline
+\end{DoxyParams}
+\mbox{\label{namespaceepoch__calculator_a9b8f276cddf0dc47dab6b67491e92042}} 
+\index{epoch\_calculator@{epoch\_calculator}!dispersion\_Stokes@{dispersion\_Stokes}}
+\index{dispersion\_Stokes@{dispersion\_Stokes}!epoch\_calculator@{epoch\_calculator}}
+\doxysubsubsection{dispersion\_Stokes()}
+{\footnotesize\ttfamily def epoch\+\_\+calculator.\+dispersion\+\_\+\+Stokes (\begin{DoxyParamCaption}\item[{}]{k,  }\item[{}]{k0,  }\item[{}]{ne,  }\item[{}]{omega0 }\end{DoxyParamCaption})}
+
+
+
+dispersion\+\_\+\+Stokes 
+
+Stokes dispersion curve (Stokes branch) (maximal S\+RS growth where this curve intersects E\+PW curve) 
+\begin{DoxyParams}{Parameters}
+{\em k} & \+: Wavenumber in plasma \\
+\hline
+{\em k0} & \+: Vacuum wavenumber (laser) \\
+\hline
+{\em ne} & \+: Electron number density \\
+\hline
+{\em omega0} & \+: Laser frequency \\
+\hline
+\end{DoxyParams}
+\mbox{\label{namespaceepoch__calculator_accfffdd3fb86162df9a4d96739420c49}} 
+\index{epoch\_calculator@{epoch\_calculator}!moving\_av@{moving\_av}}
+\index{moving\_av@{moving\_av}!epoch\_calculator@{epoch\_calculator}}
+\doxysubsubsection{moving\_av()}
+{\footnotesize\ttfamily def epoch\+\_\+calculator.\+moving\+\_\+av (\begin{DoxyParamCaption}\item[{}]{Q,  }\item[{}]{span,  }\item[{}]{period = {\ttfamily 10} }\end{DoxyParamCaption})}
+
+
+
+moving\+\_\+av 
+
+Finds movng average of an array using scipys uniform\+\_\+filter1d function 
+\begin{DoxyParams}{Parameters}
+{\em Q} & \+: Data array \\
+\hline
+{\em span} & \+: length of data \\
+\hline
+{\em period} & \+: period to average over \\
+\hline
+\end{DoxyParams}
+\mbox{\label{namespaceepoch__calculator_a1b314f55273b58d5b591b2185a9365e4}} 
+\index{epoch\_calculator@{epoch\_calculator}!plasmon@{plasmon}}
+\index{plasmon@{plasmon}!epoch\_calculator@{epoch\_calculator}}
+\doxysubsubsection{plasmon()}
+{\footnotesize\ttfamily def epoch\+\_\+calculator.\+plasmon (\begin{DoxyParamCaption}\item[{}]{ne }\end{DoxyParamCaption})}
+
+
+
+plasmon 
+
+Calculates electron-\/plasma frequency 
+\begin{DoxyParams}{Parameters}
+{\em ne} & \+: Electron number density \\
+\hline
+\end{DoxyParams}
+\mbox{\label{namespaceepoch__calculator_a8b6e2f7155237e85a133cf2d0406c615}} 
+\index{epoch\_calculator@{epoch\_calculator}!srs\_matching@{srs\_matching}}
+\index{srs\_matching@{srs\_matching}!epoch\_calculator@{epoch\_calculator}}
+\doxysubsubsection{srs\_matching()}
+{\footnotesize\ttfamily def epoch\+\_\+calculator.\+srs\+\_\+matching (\begin{DoxyParamCaption}\item[{}]{k,  }\item[{}]{k0,  }\item[{}]{ne,  }\item[{}]{v\+\_\+th,  }\item[{}]{omega0 }\end{DoxyParamCaption})}
+
+
+
+srs\+\_\+matching 
+
+S\+RS frequency matching condition (S\+RS when it returns zero) 
+\begin{DoxyParams}{Parameters}
+{\em k} & \+: Wavenumber in plasma \\
+\hline
+{\em k0} & \+: Vacuum wavenumber (laser) \\
+\hline
+{\em ne} & \+: Electron number density \\
+\hline
+{\em v\+\_\+th} & \+: Electron thermal velocity \\
+\hline
+{\em omega0} & \+: Laser frequency \\
+\hline
+\end{DoxyParams}
+\mbox{\label{namespaceepoch__calculator_aa90ae7cdfcf8222bc27e629d7ada6d5b}} 
+\index{epoch\_calculator@{epoch\_calculator}!winsincFIR@{winsincFIR}}
+\index{winsincFIR@{winsincFIR}!epoch\_calculator@{epoch\_calculator}}
+\doxysubsubsection{winsincFIR()}
+{\footnotesize\ttfamily def epoch\+\_\+calculator.\+winsinc\+F\+IR (\begin{DoxyParamCaption}\item[{}]{omega\+\_\+c,  }\item[{}]{omega\+\_\+s,  }\item[{}]{M }\end{DoxyParamCaption})}
+
+
+
+winsinc\+F\+IR 
+
+Windowed sinc filter function ({\texttt{ http\+://www.\+dspguide.\+com/ch16/2.\+htm}} (Equation 16-\/4)) 
+\begin{DoxyParams}{Parameters}
+{\em omega\+\_\+c} & \+: cutoff frequency \\
+\hline
+{\em omega\+\_\+s} & \+: sampling rate (sampling frequency) \\
+\hline
+{\em M} & \+: length of the filter kernel (must be odd) \\
+\hline
+\end{DoxyParams}
