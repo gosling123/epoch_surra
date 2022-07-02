@@ -170,7 +170,7 @@ class Laser_Plasma_Params:
         self.directory = dir+'/' # Directory to look into 
         self.intensity = read_intensity(self.directory) # intensity W/cm^2
         self.wavelength = 351*nano # laser wavelength
-        files =  glob.glob('fields*.sdf') # List of field_ .. .sdf data files
+        files =  glob.glob(self.directory+'fields*.sdf') # List of field_ .. .sdf data files
         self.timesteps = len(files) # Number of field timesteps
         self.omega0 =  c * 2 * pi / self.wavelength # Laser angular frequency Rad s^-1
         self.critical_density = self.omega0**2 * me * eps0 / e**2 # crtitical density (omega0 = omega_pe)
@@ -184,7 +184,7 @@ class Laser_Plasma_Params:
         self.grid_data = sdf.read(self.directory+'grid_data_0000.sdf', dict=True) # for initial set-up
         self.field_data_0 = sdf.read(self.directory+'fields_0000.sdf', dict=True) # for working out dt etc
         self.field_data_1 = sdf.read(self.directory+'fields_0001.sdf', dict=True) # for working out dt etc
-        self.data_final = sdf.read('grid_data_0001.sdf', dict=True) # for end simulation time
+        self.data_final = sdf.read(self.directory+'grid_data_0001.sdf', dict=True) # for end simulation time
 
     ## get_spatio_temporal
     #
@@ -209,7 +209,8 @@ class Laser_Plasma_Params:
             self.Lx /= micron
             self.dx /= micron  
             
-        self.dt = self.field_data_0['Header']['time'] - self.field_data_0['Header']['time'] # time step between field data dumps in seconds
+        self.dt = self.field_data_1['Header']['time'] - self.field_data_0['Header']['time'] # time step between field data dumps in seconds
+
         self.t_end = self.data_final['Header']['time'] # Total sim time period in seconds
         self.time = np.linspace(0, self.t_end, self.timesteps, endpoint=True) # Total time array for field data dumps in seconds
         
@@ -434,13 +435,13 @@ class EM_fields:
         n,m = Ey.shape # array size
 
         omega = 5.36652868179e+15 # laser frequency
-        omega_0 = 1 # normalised laser frequency 
-        omega_bw = 0.2 # bandswidth centred at laser frequency
+        omega_0 = 1.0 # normalised laser frequency 
+        omega_bw = 0.3 # bandswidth centred at laser frequency
         T_end = self.epoch_data.t_end # sim end time
         N = self.epoch_data.timesteps # number of time steps
         dt = T_end/N # time step
         omega_s = 2*np.pi*(1/dt) # sampling frequency 
-        M = 1001 # length of the filter kernel (must be odd) 
+        M = (N - 1)//2 + 1 # half length of the filter kernel (must be odd) 
 
         h = bandpass(omega_0,omega_bw,omega_s,M) #bandpass filter
 
@@ -594,7 +595,7 @@ class dist_f:
     # @param dir : Directory where data is stored (str)
     def __init__(self, dir):
         self.directory = dir+'/' # Directory to look into 
-        self.files =  glob.glob('dist*.sdf') # list of dist_ .. .sdf files
+        self.files =  glob.glob(self.directory+'dist*.sdf') # list of dist_ .. .sdf files
         self.nfiles = len(self.files) # number of dist_ .. .sdf files
         self.p_max = 2.73092448831719e-22 # momentum max 
         self.p_min = 0 # momentum min
@@ -634,6 +635,8 @@ class dist_f:
     # @param scaled_x : (Logical) Scales momentum using p_norm
     def plot_p_dist_func(self, scaled_x = False):
         
+        self.read_dist_data()
+        
         self.momenta_bins = np.linspace(self.p_min, self.p_max, self.res, endpoint = True)
         
         if scaled_x:
@@ -644,8 +647,8 @@ class dist_f:
             for i in range(self.nfiles):
                 plt.plot(self.momenta_bins, self.dist_funcs[i], label = str(self.times[i]))
         
-        y_max = self.dist_funcs.max
-        y_min = y_max * 1e-5
+        self.y_max = self.dist_funcs.max()
+        self.y_min = self.y_max * 1e-5
           
         plt.yscale('log')
         if scaled_x:
