@@ -810,9 +810,7 @@ class dist_f:
             self.areas_total[i] = np.trapz(self.dist_funcs_E_forward[i], x = self.E_forward_keV)
         
         self.area_total_av = np.trapz(self.dist_funcs_E_av_forward, x = self.E_forward_keV)
-
-        self.T_weights = np.zeros(i)
-        
+  
         E_hot = np.linspace(0, 200, 2000)
 
         self.area_frac_vals = np.zeros((len(self.dist_funcs_E_forward), len(E_hot)))
@@ -823,18 +821,21 @@ class dist_f:
                 points = np.where(self.E_forward_keV>E_hot[j])[0]
                 self.area_frac_vals[i][j] = np.trapz(self.dist_funcs_E_forward[i][points], x = self.E_forward_keV[points])/self.areas_total[i]
 
-        self.T_weights = np.zeros(len(self.dist_funcs_E_forward))
+        self.E_weights = np.zeros(len(self.dist_funcs_E_forward))
 
         for i in range(len(self.dist_funcs_E_forward)):
-            self.T_weights[i] = (np.sum(E_hot*self.area_frac_vals[i])/np.sum(self.area_frac_vals[i]))
+            self.E_weights[i] = (np.sum(E_hot*self.area_frac_vals[i])/np.sum(self.area_frac_vals[i]))
 
         for j in range(len(E_hot)):
                 points = np.where(self.E_forward_keV>E_hot[j])[0]
                 self.area_frac_val_av[j] = np.trapz(self.dist_funcs_E_av_forward[points], x = self.E_forward_keV[points])/self.area_total_av
 
+         
 
-        self.T_weight_av = (np.sum(E_hot*self.area_frac_val_av)/np.sum(self.area_frac_val_av))
+        self.E_weight_av = (np.sum(E_hot*self.area_frac_val_av)/np.sum(self.area_frac_val_av))
 
+        self.T_weights = 0.5 * self.E_weights
+        self.T_weight_av = 0.5*self.E_weight_av
         if plot:
             for i in range(len(self.dist_funcs_E_forward)):
                 plt.plot(E_hot, self.area_frac_vals[i], color = 'blue', alpha = 0.5)
