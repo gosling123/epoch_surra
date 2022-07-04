@@ -7,6 +7,7 @@
 # grid quantities (Laser_Plasma_Params), field quantities (EM_fileds) 
 # and the momentum distribution function (dist_f).
 
+from typing import ForwardRef
 from nbformat import read
 import numpy as np
 import sdf
@@ -41,6 +42,22 @@ pi = np.pi
 pico = 1e-12
 micron = 1e-6
 nano = 1e-9
+
+## max_boltz
+#
+# Maxwell Boltzman distribution
+# @param momenta : momentum array
+# @param temp : temperature (kelvin)
+# @param area  : average area of outputted f(p) from EPOCH (for normalisation to match)
+def max_boltz(momenta, temp, area):
+    max_boltz_data = np.zeros(len(momenta))
+    factor = area/np.sqrt(2*me*kB*temp*np.pi) # so integral equals 1
+    for i in range(len(momenta)):
+        
+        exp_term = np.exp(-momenta[i]**2 / (2*me * kB * temp))
+        max_boltz_data[i] = factor * exp_term
+        
+    return max_boltz_data
 
 ## winsincFIR
 #
@@ -568,13 +585,14 @@ class EM_fields:
     # @param ncells : Number of cells to average over (default 50)
     # @param laser : (Logical) Whether to use laser sginal (true) or SRS signal (false)   
     def get_flux_grid_av(self, ncells = 50, laser = False):
+        print(laser)
+        St_av = np.abs(self.get_flux(laser = laser))
         
-        St_av = self.get_flux(self, laser = laser, time_series = False) # time average array
         if laser:
             sum_ = 0
             for i in range(self.nx - ncells, self.nx):
                 sum_ += St_av[i] 
-        else:     
+        else:
             sum_ = 0
             for i in range(ncells):
                 sum_ += St_av[i]
@@ -598,7 +616,7 @@ class dist_f:
         self.files =  glob.glob(self.directory+'dist*.sdf') # list of dist_ .. .sdf files
         self.nfiles = len(self.files) # number of dist_ .. .sdf files
         self.p_max = 2.73092448831719e-22 # momentum max 
-        self.p_min = 0 # momentum min
+        self.p_min = -1 * self.p_max # momentum min
         data0 = sdf.read(self.directory+'dist_0000.sdf', dict=True) # read first file to get resoloution (i.e number of bins)
         self.res = len(data0['dist_fn/x_px/electrons'].data) # resoloution
         self.epoch_data = Laser_Plasma_Params(dir) # Laser_Plasma_Params class to get certain variables
@@ -619,6 +637,7 @@ class dist_f:
         
         self.times = []
         self.dist_funcs = np.zeros((self.nfiles, self.res))
+        self.smooth_dist_funcs =  np.zeros((self.nfiles, self.res))
         
         for i in range(self.nfiles):
             
@@ -627,55 +646,203 @@ class dist_f:
             self.times.append(data['Header']['time'])
             
             self.dist_funcs[i] = data['dist_fn/x_px/electrons'].data
+            self.smooth_dist_funcs[i] = moving_av(self.dist_funcs[i], self.res, period = self.res//40)
+            
+        self.dist_funcs_av = np.zeros(self.res)
+        self.smooth_dist_funcs_av = np.zeros(self.res)
+        
+        for dist, smooth_dist in zip(self.dist_funcs, self.smooth_dist_funcs):
+            self.dist_funcs_av += dist
+            self.smooth_dist_funcs_av += smooth_dist
+            
+        self.dist_funcs_av /= self.nfiles
+        self.smooth_dist_funcs_av /= self.nfiles
+        self.momenta_bins = np.linspace(self.p_min, self.p_max, self.res, endpoint = True)
+        self.energy_bins = self.momenta_bins**2 / (2*me)
+        self.energy_bins_keV = self.energy_bins/(e * 1e3)
+
+        self.area_av = 0
+
+        for f in self.dist_funcs:
+            self.area_av += np.trapz(f, x=self.momenta_bins)
+        self.area_av /= len(self.dist_funcs)
+
+        self.max_boltz_eq = max_boltz(self.momenta_bins, self.epoch_data.Te_kelvin, self.area_av)
 
     ## plot_p_dist_func
     #
     # Plots all distribution functions
     # @param self : The object pointer
+    # @param smooth : (Logical) Smooths out function of random zeros
     # @param scaled_x : (Logical) Scales momentum using p_norm
-    def plot_p_dist_func(self, scaled_x = False):
+    # @param plot_hot_e : (Logical) Plots hot electron tail
+    def plot_p_dist_func(self, smooth = False, scaled_x = False, plot_hot_e = False):
         
         self.read_dist_data()
         
-        self.momenta_bins = np.linspace(self.p_min, self.p_max, self.res, endpoint = True)
+        if smooth:
+            self.plot_dist_funcs = self.smooth_dist_funcs
+            self.plot_dist_funcs_av = self.smooth_dist_funcs_av
+        else:
+            self.plot_dist_funcs = self.dist_funcs
+            self.plot_dist_funcs_av = self.dist_funcs_av
         
         if scaled_x:
             for i in range(self.nfiles):
-                plt.plot(self.momenta_bins / self.p_norm, self.dist_funcs[i], label = str(self.times[i]))
+                plt.plot(self.momenta_bins / self.p_norm, self.plot_dist_funcs[i], label = str(np.round(self.times[i]*1e12, 3)) + 'ps', alpha = 0.7)
+            plt.plot(self.momenta_bins / self.p_norm, self.plot_dist_funcs_av, label = 'Time Average', color = 'black')
+            plt.plot(self.momenta_bins / self.p_norm, self.max_boltz_eq, label = 'Equilibrium MB', color = 'magenta')
             
         else:
             for i in range(self.nfiles):
-                plt.plot(self.momenta_bins, self.dist_funcs[i], label = str(self.times[i]))
+                plt.plot(self.momenta_bins, self.plot_dist_funcs[i], label =  str(np.round(self.times[i]*1e12, 3)) + 'ps', alpha = 0.7)
+            plt.plot(self.momenta_bins, self.plot_dist_funcs_av, label = 'Time Average', color = 'black')
+            plt.plot(self.momenta_bins, self.max_boltz_eq, label = 'Equilibrium MB', color = 'magenta')
         
-        self.y_max = self.dist_funcs.max()
-        self.y_min = self.y_max * 1e-5
+        
+        self.y_max = 1.1*self.plot_dist_funcs.max()
+        self.y_min = self.y_max * 1e-4
           
         plt.yscale('log')
+        plt.ylim(self.y_min, self.y_max)
         if scaled_x:
-           plt.xlim(self.p_min, self.p_max)
+           plt.xlim(self.p_min/self.p_norm, self.p_max/self.p_norm)
            plt.xlabel(r'$p / m_e v_{th}$)')
+            
         else:
            plt.xlim(self.p_min, self.p_max)           
            plt.xlabel(r'$p (m s^{-1}$)')  
+         
+        if plot_hot_e:
+            y_min = 5e16
+            y_max = self.plot_dist_funcs[-1][2000]
+    
+            plt.ylim(y_min, y_max)
+            if scaled_x:
+                plt.xlabel(r'$p / m_e v_{th}$)')
+                plt.xlim(self.momenta_bins[2000]/self.p_norm, self.momenta_bins[-1]/self.p_norm)
+            else:
+                plt.xlabel(r'$p (m s^{-1}$)')
+                plt.xlim(self.momenta_bins[2000], self.momenta_bins[-1])
                     
-        plt.ylim(self.y_min, self.y_max)
+        
         plt.ylabel(r'$f(p)$')
+        plt.legend(fontsize = 16)
                     
         plt.gcf().set_size_inches(16,8)
                       
         plt.show()
-        
     
-            
-            
-            
-            
-                
+    ## get_f_E
+    #
+    # get electron flux
+    # @param self : The object pointer
+    # @param smooth : (Logical) Smooths out function of random zeros
+    def get_f_E(self, smooth = True):
         
+        self.read_dist_data()
 
+        self.max_boltz_eq_f_E = self.max_boltz_eq * np.sqrt(2*me*self.energy_bins)
+        self.dist_funcs_E = np.zeros((self.nfiles, self.res))
+        self.dist_funcs_E_av = np.zeros(self.res)
         
+        if smooth:           
+            for i,dist in enumerate(self.smooth_dist_funcs):
+                self.dist_funcs_E[i] = np.sqrt(2*me*self.energy_bins) * dist 
+                self.dist_funcs_E_av += self.dist_funcs_E[i]
+        
+            self.dist_funcs_E_av /= len(self.dist_funcs_E)
+
+        else:            
+            for i,dist in enumerate(self.dist_funcs):
+                self.dist_funcs_E[i] = np.sqrt(2*me*self.energy_bins) * dist 
+                self.dist_funcs_E_av += self.dist_funcs_E[i]
+        
+            self.dist_funcs_E_av /= len(self.dist_funcs_E)
 
 
+    ## get_forward_e_flux
+    #
+    # Get the postive momenta (forward/right travelling flux)
+    # @param self : The object pointer
+    # @param smooth : (Logical) Smooths out function of random zeros
+    # @param plot : (Logical) Plot data
+    def get_forward_e_flux(self, smooth = True, plot = False):
+
+        self.get_f_E(smooth = smooth)
+        forward = self.res//2
+
+        self.dist_funcs_E_forward = np.zeros((self.nfiles, forward))
+        self.dist_funcs_E_av_forward = self.dist_funcs_E_av[forward:]
+
+        for i, dist in enumerate(self.dist_funcs_E):
+            self.dist_funcs_E_forward[i] = dist[forward:]
+ 
+
+
+        self.E_forward = self.energy_bins[forward:]
+        self.E_forward_keV = self.E_forward / (e * 1e3)
+
+        if plot:
+            for i in range(len(self.dist_funcs_E_forward)):
+                plt.semilogy(self.E_forward_keV, self.dist_funcs_E_forward[i]/self.dist_funcs_E_forward[i].max(), alpha = 0.7, label = str(np.round(self.times[i]*1e12, 3)) + 'ps')
+            plt.semilogy(self.E_forward_keV, self.max_boltz_eq_f_E[forward:]/self.max_boltz_eq_f_E[forward:].max(), color = 'Magenta', linestyle = '--')
+            plt.semilogy(self.E_forward_keV, self.dist_funcs_E_av_forward/self.dist_funcs_E_av_forward.max(), color = 'black', linestyle = '--', label = 'Time Average')
+            plt.ylim(1e-4, 1e0)
+            plt.xlim(10, 200)
+            plt.legend()
+            plt.gcf().set_size_inches(16,8)
+
+
+    ## estimate_T_hot
+    #
+    # Estimate average hot electron temperature generated
+    # @param self : The object pointer
+    # @param smooth : (Logical) Smooths out function of random zeros
+    # @param plot : (Logical) Plot data
+    def estimate_T_hot(self, smooth = True, plot = False):
+
+        self.get_forward_e_flux(smooth = smooth)
+        
+        self.areas_total = np.zeros(len(self.dist_funcs_E_forward))
+
+        for i in range(len(self.areas_total)):
+            self.areas_total[i] = np.trapz(self.dist_funcs_E_forward[i], x = self.E_forward_keV)
+        
+        self.area_total_av = np.trapz(self.dist_funcs_E_av_forward, x = self.E_forward_keV)
+
+        self.T_weights = np.zeros(i)
+        
+        E_hot = np.linspace(0, 200, 2000)
+
+        self.area_frac_vals = np.zeros((len(self.dist_funcs_E_forward), len(E_hot)))
+        self.area_frac_val_av = np.zeros(len(E_hot))
+
+        for i in range(len(self.dist_funcs_E_forward)):
+            for j in range(len(E_hot)):
+                points = np.where(self.E_forward_keV>E_hot[j])[0]
+                self.area_frac_vals[i][j] = np.trapz(self.dist_funcs_E_forward[i][points], x = self.E_forward_keV[points])/self.areas_total[i]
+
+        self.T_weights = np.zeros(len(self.dist_funcs_E_forward))
+
+        for i in range(len(self.dist_funcs_E_forward)):
+            self.T_weights[i] = (np.sum(E_hot*self.area_frac_vals[i])/np.sum(self.area_frac_vals[i]))
+
+        for j in range(len(E_hot)):
+                points = np.where(self.E_forward_keV>E_hot[j])[0]
+                self.area_frac_val_av[j] = np.trapz(self.dist_funcs_E_av_forward[points], x = self.E_forward_keV[points])/self.area_total_av
+
+
+        self.T_weight_av = (np.sum(E_hot*self.area_frac_val_av)/np.sum(self.area_frac_val_av))
+
+        if plot:
+            for i in range(len(self.dist_funcs_E_forward)):
+                plt.plot(E_hot, self.area_frac_vals[i], color = 'blue', alpha = 0.5)
+
+            plt.plot(E_hot, self.area_frac_val_av, color = 'red', alpha = 0.8)
+            plt.xlabel(r'$E_h (keV)$')
+            plt.ylabel(r'$ A_{E > E_h} / A_{E > 0} )$')
+            plt.gcf().set_size_inches(16,8)
 
 
 
