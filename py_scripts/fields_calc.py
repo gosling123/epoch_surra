@@ -4,9 +4,9 @@ from plasma_calc import *
 ## winsincFIR
 #
 # Windowed sinc filter function (http://www.dspguide.com/ch16/2.htm (Equation 16-4))
-# @param omega_c : cutoff frequency
-# @param omega_s : sampling rate (sampling frequency)
-# @param M  : length of the filter kernel (must be odd)
+# @param omega_c  Cutoff frequency
+# @param omega_s  Sampling rate (sampling frequency)
+# @param M   Length of the filter kernel (must be odd)
 def winsincFIR(omega_c,omega_s,M):
     # cutoff frequency shoudl be a fraction of sampling frequency
     ker = np.sinc(2 * omega_c / omega_s * (np.arange(M) - (M - 1)/2))
@@ -19,9 +19,9 @@ def winsincFIR(omega_c,omega_s,M):
 ## bandpass
 #
 # Create a band-pass filter by convolving a high-pass and a low-pass filter
-# @param w0 : central frequency you want to filter around (fraction of omega0)
-# @param bw : total bandwidth of your filter (fraction of omega0)
-# @param M : half filter length (must be odd)
+# @param w0  Central frequency you want to filter around (fraction of omega0)
+# @param bw  Total bandwidth of your filter (fraction of omega0)
+# @param M  Half filter length (must be odd)
 def bandpass(w0,bw,omega_s,M):
     # Angular frequency used for NIF Laser
     omega = 5.36652868179e+15
@@ -53,8 +53,8 @@ class EM_fields:
     ## __init__
     #
     # The constructor
-    # @param self : The object pointer
-    # @param dir : Directory where data is stored (str)
+    # @param self  The object pointer
+    # @param dir  Directory where data is stored (str)
     def __init__(self, dir):
         self.directory = dir+'/' # Directory to look into 
         self.epoch_data = Laser_Plasma_Params(dir) # Laser_Plasma_Params class to get certain variables
@@ -68,7 +68,7 @@ class EM_fields:
     ## get_2D_Electric_Field_x
     #
     # Get time and space data of Ex field i.e Ex(x,t)
-    # @param self : The object pointer
+    # @param self  The object pointer
     def get_2D_Electric_Field_x(self):
         Ex = np.zeros((self.timesteps, self.nx))
         for i in range(0, self.timesteps):
@@ -80,7 +80,7 @@ class EM_fields:
     ## get_2D_Electric_Field_y
     #
     # Get time and space data of Ey field i.e Ey(x,t)
-    # @param self : The object pointer
+    # @param self  The object pointer
     def get_2D_Electric_Field_y(self):
         Ey = np.zeros((self.timesteps, self.nx))
         for i in range(0, self.timesteps):
@@ -92,7 +92,7 @@ class EM_fields:
     ## get_2D_Magnetic_Field_z
     #
     # Get time and space data of Bz field i.e Bz(x,t)
-    # @param self : The object pointer
+    # @param self  The object pointer
     def get_2D_Magnetic_Field_z(self):
         Bz = np.zeros((self.timesteps, self.nx))
         for i in range(0, self.timesteps):
@@ -104,9 +104,9 @@ class EM_fields:
     ## get_2D_FFT
     #
     # Get 2D FFT (i.e space and time) for specific field
-    # @param self : The object pointer
-    # @param field : EM Field to FFT (inputs are either 'Ex', 'Ey', 'Bz')
-    # @param square_mod : (Logical) outputs the sqaured modulus of the FFT 
+    # @param self  The object pointer
+    # @param field  EM Field to FFT (inputs are either 'Ex', 'Ey', 'Bz')
+    # @param square_mod  (Logical) outputs the sqaured modulus of the FFT 
     def get_2D_FFT(self, field, square_mod = True):
         if field == 'Ex':
             array = self.get_2D_Electric_Field_x() # Ex(x,t) field
@@ -133,9 +133,9 @@ class EM_fields:
     ## get_time_FFT
     #
     # Produces 1D time FFT for specific field
-    # @param self : The object pointer
-    # @param field : EM Field to FFT (inputs are either 'Ex', 'Ey', 'Bz')
-    # @param square_mod : (Logical) outputs the sqaured modulus of the FFT
+    # @param self  The object pointer
+    # @param field  EM Field to FFT (inputs are either 'Ex', 'Ey', 'Bz')
+    # @param square_mod  (Logical) outputs the sqaured modulus of the FFT
     def get_time_FFT(self, field, square_mod = True):
         if field == 'Ex':
             array = self.get_2D_Electric_Field_x().T # Ex(t,x) field
@@ -161,9 +161,9 @@ class EM_fields:
     ## get_space_FFT
     #
     # Produces 1D space FFT for specific field
-    # @param self : The object pointer
-    # @param field : EM Field to FFT (inputs are either 'Ex', 'Ey', 'Bz')
-    # @param square_mod : (Logical) outputs the sqaured modulus of the FFT
+    # @param self  The object pointer
+    # @param field  EM Field to FFT (inputs are either 'Ex', 'Ey', 'Bz')
+    # @param square_mod  (Logical) outputs the sqaured modulus of the FFT
     def get_space_FFT(self, field, square_mod = True):
         if field == 'Ex':
             array = self.get_2D_Electric_Field_x() # Ex(x,t) field
@@ -189,10 +189,10 @@ class EM_fields:
     ## get_filtered_signals
     #
     # Finds filtered signals of Ey and Bz fields (either laser signal or SRS signal)
-    # @param self : The object pointer
-    # @param laser : (Logical) Whether to output laser sginal (true) or SRS signal (false)
-    # @param plot_E : (Logical) Whether to plot the filter result at set grid point to test if it works (Ey field)
-    # @param plot_B : (Logical) Whether to plot the filter result at set grid point to test if it works (Bz field)
+    # @param self  The object pointer
+    # @param laser  (Logical) Whether to output laser sginal (true) or SRS signal (false)
+    # @param plot_E  (Logical) Whether to plot the filter result at set grid point to test if it works (Ey field)
+    # @param plot_B  (Logical) Whether to plot the filter result at set grid point to test if it works (Bz field)
     def get_filtered_signals(self, laser = False, plot_E = False, plot_B = False):
 
         Ey = self.get_2D_Electric_Field_y().T # Ey(t,x) field
@@ -239,17 +239,17 @@ class EM_fields:
             ax[0,0].plot(t*1e12, Ey[i]*1e-11)
             fftsig = fft(Ey[i])
             
-            fft_plot = moving_av(np.abs(fftsig), span = len(fft_fre) , period = 100)
+            fft_plot = moving_av(np.abs(fftsig), span = len(fft_fre) , period = len(fft_fre)//1)
             
             ax[0,1].scatter(fft_fre, fft_plot)
             
             laser_sig = Ey_laser[i]
-            fft_laser = moving_av(np.abs(fft(laser_sig)), span = len(fft_fre) , period = 100)
+            fft_laser = moving_av(np.abs(fft(laser_sig)), span = len(fft_fre) , period = len(fft_fre)//1)
             ax[1,0].plot(t*1e12,laser_sig*1e-11)
             ax[1,1].scatter(fft_fre,fft_laser)
                 
             scatter_sig = Ey_SRS[i]
-            fft_srs = moving_av(np.abs(fft(scatter_sig)), span = len(fft_fre) , period = 100)
+            fft_srs = moving_av(np.abs(fft(scatter_sig)), span = len(fft_fre) , period = len(fft_fre)//1)
             ax[2,0].plot(t*1e12,scatter_sig*1e-11)
             ax[2,1].scatter(fft_fre,fft_srs)
        
@@ -303,9 +303,9 @@ class EM_fields:
     # Finds Poynting flux in x direction Sx = (EyBz-ByEz)/mu0
     # (SRS produces scattered light with same polarisation as the laser (i.e Ez and By are negliable) thus
     #  Sx = EyBz/mu0)
-    # @param self : The object pointer
-    # @param laser : (Logical) Whether to use laser sginal (true) or SRS signal (false)
-    # @param plot_E : (Logical) Whether to output the Sx time series (true) or the time average (false)     
+    # @param self  The object pointer
+    # @param laser  (Logical) Whether to use laser sginal (true) or SRS signal (false)
+    # @param plot_E  (Logical) Whether to output the Sx time series (true) or the time average (false)     
     def get_flux(self, laser = False, time_series = False):
         Ey, Bz = self.get_filtered_signals(laser = laser) # Filtered Ey and Bz fields
         Ey = Ey.T # transpose back to be Ey(x,t)
@@ -330,9 +330,9 @@ class EM_fields:
     ## get_flux_grid_av
     #
     # Averages Poynting flux over ncells (near LH boundary for backscatter SRS and RH boundary for laser)
-    # @param self : The object pointer
-    # @param ncells : Number of cells to average over (default 50)
-    # @param laser : (Logical) Whether to use laser sginal (true) or SRS signal (false)   
+    # @param self  The object pointer
+    # @param ncells  Number of cells to average over (default 50)
+    # @param laser  (Logical) Whether to use laser sginal (true) or SRS signal (false)   
     def get_flux_grid_av(self, ncells = 50, laser = False):
         St_av = np.abs(self.get_flux(laser = laser))
         

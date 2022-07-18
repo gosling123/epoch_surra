@@ -6,7 +6,7 @@ from utils import *
 ## plasmon
 #
 # Calculates electron-plasma frequency
-# @param ne : Electron number density 
+# @param ne  Electron number density 
 def plasmon(ne):
     return np.sqrt(ne*e**2 / (me*eps0))
 
@@ -14,10 +14,10 @@ def plasmon(ne):
 #
 # Stokes dispersion curve (Stokes branch)
 # (maximal SRS growth where this curve intersects EPW curve)
-# @param k : Wavenumber in plasma
-# @param k0 : Vacuum wavenumber (laser) 
-# @param ne : Electron number density
-# @param omega0 : Laser frequency
+# @param k  Wavenumber in plasma
+# @param k0  Vacuum wavenumber (laser) 
+# @param ne  Electron number density
+# @param omega0  Laser frequency
 def dispersion_Stokes(k, k0, ne, omega0):
     omega_pe = plasmon(ne)
     omega_stk = omega0 - np.sqrt(omega_pe**2 + c**2 * (k-k0)**2)
@@ -26,9 +26,9 @@ def dispersion_Stokes(k, k0, ne, omega0):
 ## dispersion_EPW
 #
 # Electron Plasma wave dispersion realtion - Bohm-Gross
-# @param k : EPW wavenumber in plasma
-# @param ne : Electron number density
-# @param v_th : Electron thermal velocity
+# @param k  EPW wavenumber in plasma
+# @param ne  Electron number density
+# @param v_th  Electron thermal velocity
 def dispersion_EPW(k, ne, v_th):
     omega_pe = plasmon(ne)
     omega_epw = np.sqrt(omega_pe**2 + 3*k**2*v_th**2)
@@ -37,8 +37,8 @@ def dispersion_EPW(k, ne, v_th):
 ## dispersion_EM
 #
 # EM wave in plasama dipersion relation
-# @param k : EM wavenumber in plasma
-# @param ne : Electron number density
+# @param k  EM wavenumber in plasma
+# @param ne  Electron number density
 def dispersion_EM(k, ne):
     omega_pe = plasmon(ne)
     omega_em = np.sqrt(omega_pe**2 + c**2 * k**2)
@@ -48,11 +48,11 @@ def dispersion_EM(k, ne):
 ## srs_matching
 #
 # SRS frequency matching condition (SRS when it returns zero)
-# @param k : Wavenumber in plasma
-# @param k0 : Vacuum wavenumber (laser) 
-# @param ne : Electron number density
-# @param v_th : Electron thermal velocity
-# @param omega0 : Laser frequency
+# @param k  Wavenumber in plasma
+# @param k0  Vacuum wavenumber (laser) 
+# @param ne  Electron number density
+# @param v_th  Electron thermal velocity
+# @param omega0  Laser frequency
 def srs_matching(k, k0, ne, v_th, omega0):
     
     omega_epw = dispersion_EPW(k, ne, v_th)
@@ -71,8 +71,8 @@ class Laser_Plasma_Params:
     ## __init__
     #
     # The constructor
-    # @param self : The object pointer
-    # @param dir : Directory where data is stored (str)
+    # @param self  The object pointer
+    # @param dir  Directory where data is stored (str)
     def __init__(self, dir):
         self.directory = dir+'/' # Directory to look into 
         self.intensity = read_input(self.directory, param='intensity') # intensity W/cm^2
@@ -83,13 +83,13 @@ class Laser_Plasma_Params:
         self.critical_density = self.omega0**2 * me * eps0 / e**2 # crtitical density (omega0 = omega_pe)
         self.k0_vac = 2 * pi / self.wavelength # Laser wavenumber in a vacuum
         self.ppc = read_input(self.directory, param='ppc')
-        self.Ln = read_input(self.directory, param='Ln')
+        self.Ln = read_input(self.directory, param='ne_scale_len')
 
 
     ## read_data
     #
     # Reads the initial grid data and other files required to find sim data
-    # @param self : The object pointer
+    # @param self  The object pointer
     def read_data(self):
         self.grid_data = sdf.read(self.directory+'grid_data_0000.sdf', dict=True) # for initial set-up
         self.field_data_0 = sdf.read(self.directory+'fields_0000.sdf', dict=True) # for working out dt etc
@@ -99,8 +99,8 @@ class Laser_Plasma_Params:
     ## get_spatio_temporal
     #
     # Reads the initial grid data and other files required to find sim data
-    # @param self : The object pointer
-    # @param mic : (Logical) Output grid in microns
+    # @param self  The object pointer
+    # @param mic  (Logical) Output grid in microns
     def get_spatio_temporal(self, mic = False):
         self.grid = np.array((self.grid_data['Grid/Grid'].data)).reshape(-1) # grid edges in metres (field positions)
         self.nodes = np.zeros(len(self.grid)-1) # centre nodes (thermodymanic variable location)
@@ -132,7 +132,7 @@ class Laser_Plasma_Params:
     ## get_plasma_param
     #
     # Calculates plasma parameters/variables
-    # @param self : The object pointer               
+    # @param self  The object pointer               
     def get_plasma_param(self):
         # electron number density
         self.ne_data = np.array(self.grid_data['Derived/Number_Density/electrons'].data) # Initial number density throughout domain in m^-3
@@ -159,8 +159,8 @@ class Laser_Plasma_Params:
     ## get_matching_conds
     #
     # Calculates SRS scattered wavenumber and frequency
-    # @param self : The object pointer
-    # # @param ne : Electron number density 
+    # @param self  The object pointer
+    # # @param ne  Electron number density 
     def get_matching_conds(self, ne):
 
         # SRS matching conditions
@@ -192,8 +192,8 @@ class Laser_Plasma_Params:
     ## get_srs_phase_vel
     #
     # Calculates SRS (backscatter) phase velocity at n = ne
-    # @param self : The object pointer
-    # # @param ne : Electron number density      
+    # @param self  The object pointer
+    # # @param ne  Electron number density      
     def get_srs_phase_vel(self, ne):
 
         self.get_matching_conds(ne = ne)

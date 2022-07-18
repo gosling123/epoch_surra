@@ -4,9 +4,9 @@ from plasma_calc import *
 ## max_boltz
 #
 # Maxwell Boltzman distribution
-# @param momenta : momentum array
-# @param temp : temperature (kelvin)
-# @param area  : average area of outputted f(p) from EPOCH (for normalisation to match)
+# @param momenta  Momentum array
+# @param temp  Temperature (kelvin)
+# @param area   Average area of outputted f(p) from EPOCH (for normalisation to match)
 def max_boltz(momenta, temp, area, flux = False):
     max_boltz_data = np.zeros(len(momenta))
     factor = area/np.sqrt(2*me*kB*temp*np.pi) # so integral equals 1
@@ -31,8 +31,8 @@ class dist_f:
     ## __init__
     #
     # The constructor
-    # @param self : The object pointer
-    # @param dir : Directory where data is stored (str)
+    # @param self  The object pointer
+    # @param dir  Directory where data is stored (str)
     def __init__(self, dir):
         self.directory = dir+'/' # Directory to look into 
         self.files =  glob.glob(self.directory+'dist*.sdf') # list of dist_ .. .sdf files
@@ -55,7 +55,7 @@ class dist_f:
     ## read_dist_data
     #
     # Read and store distrinution functions at output times
-    # @param self : The object pointer
+    # @param self  The object pointer
     def read_dist_data(self):
         
         self.times = []
@@ -96,10 +96,10 @@ class dist_f:
     ## plot_p_dist_func
     #
     # Plots all distribution functions
-    # @param self : The object pointer
-    # @param smooth : (Logical) Smooths out function of random zeros
-    # @param scaled_x : (Logical) Scales momentum using p_norm
-    # @param plot_hot_e : (Logical) Plots hot electron tail
+    # @param self  The object pointer
+    # @param smooth  (Logical) Smooths out function of random zeros
+    # @param scaled_x  (Logical) Scales momentum using p_norm
+    # @param plot_hot_e  (Logical) Plots hot electron tail
     def plot_p_dist_func(self, smooth = False, scaled_x = False, plot_hot_e = False):
         
         self.read_dist_data()
