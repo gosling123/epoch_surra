@@ -20,11 +20,24 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 @licend  The above is the entire license notice
 for the JavaScript code in this file
 */
-var menudata={children:[
-{text:"Main Page",url:"index.html"},
-{text:"Data Types List",url:"annotated.html",children:[
-{text:"Data Types List",url:"annotated.html"},
-{text:"Data Types",url:"classes.html"},
-{text:"Data Fields",url:"functions.html",children:[
-{text:"All",url:"functions.html"},
-{text:"Functions/Subroutines",url:"functions_func.html"}]}]}]}
+var NAVTREE =
+[
+  [ "PX915 Summer Project - Ben Gosling", "index.html", [
+    [ "Data Types List", "annotated.html", [
+      [ "Data Types List", "annotated.html", "annotated_dup" ],
+      [ "Data Types", "classes.html", null ],
+      [ "Data Fields", "functions.html", [
+        [ "All", "functions.html", null ],
+        [ "Functions/Subroutines", "functions_func.html", null ]
+      ] ]
+    ] ]
+  ] ]
+];
+
+var NAVTREEINDEX =
+[
+".html"
+];
+
+var SYNCONMSG = 'click to disable panel synchronisation';
+var SYNCOFFMSG = 'click to enable panel synchronisation';

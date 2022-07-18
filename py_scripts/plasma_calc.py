@@ -160,7 +160,7 @@ class Laser_Plasma_Params:
     #
     # Calculates SRS scattered wavenumber and frequency
     # @param self  The object pointer
-    # # @param ne  Electron number density 
+    # @param ne  Electron number density 
     def get_matching_conds(self, ne):
 
         # SRS matching conditions
@@ -193,7 +193,7 @@ class Laser_Plasma_Params:
     #
     # Calculates SRS (backscatter) phase velocity at n = ne
     # @param self  The object pointer
-    # # @param ne  Electron number density      
+    # @param ne  Electron number density      
     def get_srs_phase_vel(self, ne):
 
         self.get_matching_conds(ne = ne)
