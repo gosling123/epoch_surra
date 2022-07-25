@@ -7,10 +7,10 @@ import time
 ## run_epoch
 #
 # Runs epoch1d simulations for set intensity 
-# @param intensity  Intensity to write in input.deck 
-# @param data_dir  Directory to store epoch data to and where the input.deck file is
-# @param output  Ouput to command line (True) or to run.log file (False)
-# @param np  Number of processors to eun epoch1d on (MPI)    
+# @param intensity : Intensity to write in input.deck 
+# @param data_dir : Directory to store epoch data to and where the input.deck file is
+# @param output : Ouput to command line (True) or to run.log file (False)
+# @param np : Number of processors to eun epoch1d on (MPI)    
 def run_epoch(intensity, data_dir = 'Data', output = False, npro = 4):
     dir = os.getenv('EPOCH1D')
     try:
@@ -30,12 +30,11 @@ def run_epoch(intensity, data_dir = 'Data', output = False, npro = 4):
 ## get_metrics_res
 #
 # Runs epoch1d simulations for changing intensity and ouptputs backsactter SRS intensity and T_hot
-# @param I_array  Intensity array (list of data to sim) 
-# @param dir  Directory to store epoch data to and where the input.deck file is
-# @param npro  Number of processors to eun epoch1d on (MPI)
-# @param fname  Filename for csv writer for back up 
-# @param save  (Logical) Save data as .npy files                  
-def get_metrics_res(I_array, dir, npro = 4, fname = 'run_epoch.csv', save = True):
+# @param I_array : Intensity array (list of data to sim) 
+# @param dir : Directory to store epoch data to and where the input.deck file is
+# @param npro : Number of processors to eun epoch1d on (MPI)
+# # @param fname : filename for csv writer for back up             
+def get_metrics_res(I_array, dir, npro = 4, fname = 'run_epoch.csv'):
 
     try:
         os.mkdir('metric_results')
@@ -54,10 +53,10 @@ def get_metrics_res(I_array, dir, npro = 4, fname = 'run_epoch.csv', save = True
     E_frac_data = np.array([])
     I_L_data = np.array([])
 
-    fname_srs = 'metric_results/I_SRS_Data.npy'
-    fname_T = 'metric_results/T_hot_Data.npy'
-    fname_E = 'metric_results/E_frac_data.npy'
-    fname_I = 'metric_results/I_L_data.npy'
+    fname_srs = 'metric_results/I_SRS_Data3.npy'
+    fname_T = 'metric_results/T_hot_Data3.npy'
+    fname_E = 'metric_results/E_frac_data3.npy'
+    fname_I = 'metric_results/I_L_data3.npy'
     for I in I_array:
         t1 = time.time()
         print('###########################')
@@ -87,9 +86,8 @@ def get_metrics_res(I_array, dir, npro = 4, fname = 'run_epoch.csv', save = True
         print('---------------------------')
         print('Time Elapsed = ', (t2 - t1)/60 , ' Minutes')
         print('---------------------------')
-    if save:
-        print('Writing Data to .npy files')   
-        np.save(fname_srs, I_SRS_data)
-        np.save(fname_T, T_hot_data)
-        np.save(fname_E, E_frac_data)
-        np.save(fname_I, I_L_data)
+    print('Writing Data to .npy files')   
+    np.save(fname_srs, I_SRS_data)
+    np.save(fname_T, T_hot_data)
+    np.save(fname_E, E_frac_data)
+    np.save(fname_I, I_L_data)

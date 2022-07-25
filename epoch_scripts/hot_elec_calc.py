@@ -5,18 +5,17 @@ from plasma_calc import *
 #
 # Maxwell Boltzman distribution in energy. 
 # Normalised in the same way as np.histogram for integral to equal one.
-# @param momenta  Momentum array
-# @param temp  Temperature (kelvin)
+# @param momenta : momentum array
+# @param temp : temperature (kelvin)
 def max_boltz_E(energy, temp):
     counts = np.zeros(len(energy))
     for i in range(len(energy)):
         exp_term = np.exp(-energy[i] / (kB * temp))
-        counts[i] = exp_term
+        counts[i] = energy[i]*exp_term
     density = counts / (np.sum(counts)*np.diff(energy)[0])
     return density
 
-
-        
+   
 
         
    
@@ -25,8 +24,8 @@ class hot_electron:
     ## __init__
     #
     # The constructor
-    # @param self  The object pointer
-    # @param dir  Directory where data is stored (str)
+    # @param self : The object pointer
+    # @param dir : Directory where data is stored (str)
     def __init__(self, dir):
         self.directory = dir+'/' # Directory to look into 
         self.epoch_data = Laser_Plasma_Params(dir) # Laser_Plasma_Params class to get certain variables
@@ -38,12 +37,7 @@ class hot_electron:
 
     
     
-    ## get_flux_dist
-    #
-    # Produce energy distribution/histogram of outgoing electron flux
-    # @param self  The object pointer
-    # @param plot  (Logical) Plot distribution
-    # @param log  (Logical) Set y-axis scaling to log
+
     def get_flux_dist(self,  plot = False, log = False):
 
         files = glob.glob(self.directory+'probes_*.sdf')
@@ -61,6 +55,8 @@ class hot_electron:
         for i in range(1, len(bins)):
             delta = 0.5*(bins[i] - bins[i-1]) # grid centres
             self.E_bins[i-1] = bins[i] - delta # fill nodal posistions
+            
+        self.E_dist *= self.E_bins
                               
         if plot:
 
@@ -83,14 +79,7 @@ class hot_electron:
         else:
             return self.E_bins, self.E_dist
 
-    ## split_dist
-    #
-    # Split found distribution into similar sized segments
-    # @param self  The object pointer
-    # @param n  Number of segments (default is 3)
-    # @param plot  (Logical) Plot distribution
-    # @param log  (Logical) Set y-axis scaling to log
-    def split_dist(self, n = 3, plot = False, log = False):
+    def split_dist(self, n, plot = False, log = False):
 
         E, flux = self.get_flux_dist()
 
@@ -99,6 +88,7 @@ class hot_electron:
         flux_norm = flux/flux.max()
 
         error_per = np.abs((flux_norm -  MB_eq_norm) / MB_eq_norm)*100
+        #look into changing that scaling
         idx = np.where(error_per > 500)
         # print(idx)
         if len(idx[0])>self.nbins//10:
@@ -111,8 +101,11 @@ class hot_electron:
         E_cut = E[self.idx:]
         
         flux_final = moving_av(flux_cut, len(flux_cut), len(flux_cut)//200)
-        flux_final = flux_final[int(0.1*len(flux_final)):]
         E_final = E_cut
+        df = np.diff(flux_final)
+        tp = np.where(df == df.min())[0][0]
+        flux_final = flux_final[int(0.75*tp):]
+        E_final = E_cut[int(0.75*tp):]
     
         self.flux_parts = []
         self.E_parts = []
@@ -149,18 +142,11 @@ class hot_electron:
         else:
             return self.E_parts, self.flux_parts
 
-    ## fit_maxwellians
-    #
-    # Fit Maxwellian like distributions to split distribution
-    # @param self  The object pointer
-    # @param n  Number of segments (default is 3)
-    # @param plot  (Logical) Plot distribution
-    # @param log  (Logical) Set y-axis scaling to log
-    def fit_maxwellians(self, n = 3, plot = False, log = False):
+    def fit_maxwellians(self, n, plot = False, log = False):
 
         E_parts, flux_parts = self.split_dist(n = n)
 
-        temps = np.linspace(self.epoch_data.Te, 200, 1000)
+        temps = np.linspace(self.epoch_data.Te, 500, 1000)
         n = len(flux_parts)
         loss = np.zeros((n, len(temps)))
 
@@ -212,7 +198,7 @@ class hot_electron:
                 ax1.set_ylabel(r'Normed Loss Function')
             
             for i,f in enumerate(self.scaled_fits):
-                ax2.plot(E_parts[i]*J_tot_KeV, f, label = r'$A$ = ' + str(np.round(self.amplitudes[i], 5)) + ', $T$ = ' + str(np.round(self.T_vals[i], 3)) + ' keV')
+                ax2.plot(E_parts[i]*J_tot_KeV, f, label = r'$A$ = ' + str(np.round(self.amplitudes[i], 8)) + ', $T$ = ' + str(np.round(self.T_vals[i], 3)) + ' keV')
             ax2.scatter(E_plot*J_tot_KeV, flux_plot, color = 'black', label = 'Data')
             ax2.set_xlabel(r'$E (keV)$')
             ax2.set_ylabel(r'$f_e(E)$')
@@ -233,21 +219,12 @@ class hot_electron:
         else:
             return self.T_vals, self.amplitudes, self.scaled_fits, self.scaled_fits_full
 
-    ## get_hot_e_temp
-    #
-    # Estimate singular hot electron temperature from weighted average of T
-    # from the Maxwellian fits, where the weights correspond to the found amplitude.
-    # @param self  The object pointer
-    # @param n  Number of segments (default is 3)
-    # @param plot  (Logical) Calculate average value across various number of fits
-    # @param plot  (Logical) Plot T_hot vs number of fits
-    def get_hot_e_temp(self, n = 3, av = True, plot = False):
+    def get_hot_e_temp(self, nplots = 5, n = 4, av = True, plot = False):
 
         if av == False:
             T_vals, A, fits, fits_full = self.fit_maxwellians(n = n, plot = False)
             self.T_hot = np.average(T_vals, weights = A)
 
-        nplots = 6
         if av:
             nfits = np.arange(1, nplots+1)
             T_data = []
@@ -255,7 +232,7 @@ class hot_electron:
                 T_vals, A, fits, fits_full = self.fit_maxwellians(n = n, plot = False)
                 T_est = np.average(T_vals, weights = A)
                 T_data.append(T_est)
-            self.T_hot_av = np.average(T_data)
+            self.T_hot_av = np.average(T_data[1:])
 
         if plot:
             plt.plot(nfits, T_data, '-o', label = 'Data')
@@ -277,24 +254,13 @@ class hot_electron:
             else:
                 return self.T_hot
 
-    ## get_energy_frac
-    #
-    # Estimates the fraction of outgoing energy being due to hot electrons.
-    # Taken to be the ratio of the area under the curve of the hot electron region
-    # to the area of the whole distribution. The hot electron region is assumed to be zero 
-    # if distribution never signifcantly deviates from the initial Maxwellian.
-    # @param self  The object pointer
-    # @param n  Number of segments (default is 3)
-    # @param plot  (Logical) Calculate average value across various number of fits
-    # @param plot  (Logical) Plot T_hot vs number of fits
     def get_energy_frac(self):
         E_h, f_h = self.split_dist(n = 1)
         E, f = self.get_flux_dist()
-
         if self.idx == 0:
-            self.E_hot_frac = np.abs(1 - np.trapz(y=f_h, x =E_h) / np.trapz(y=f, x =E))
+            self.E_hot_frac = 0
+            return self.E_hot_frac
             
         else:
-            self.E_hot_frac = np.trapz(y=f_h, x =E_h) / np.trapz(y=f, x =E)
-
-        return self.E_hot_frac[0]
+            self.E_hot_frac = np.trapz(y=f[self.idx:]*E[self.idx:], x =E[self.idx:]) / np.trapz(y=f*E, x =E)
+            return self.E_hot_frac

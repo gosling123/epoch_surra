@@ -77,8 +77,10 @@ class Laser_Plasma_Params:
         self.directory = dir+'/' # Directory to look into 
         self.intensity = read_input(self.directory, param='intensity') # intensity W/cm^2
         self.wavelength = 351*nano # laser wavelength
-        files =  glob.glob(self.directory+'fields*.sdf') # List of field_ .. .sdf data files
-        self.timesteps = len(files) # Number of field timesteps
+        self.nfiles =  len(glob.glob(self.directory+'fields*.sdf')) # List of field_ .. .sdf data files
+        initial_data = sdf.read(self.directory+'fields_0000.sdf')
+        self.nx = len(initial_data.Electric_Field_Ey.data)
+        self.timesteps = self.nfiles # Number of timesteps
         self.omega0 =  c * 2 * pi / self.wavelength # Laser angular frequency Rad s^-1
         self.critical_density = self.omega0**2 * me * eps0 / e**2 # crtitical density (omega0 = omega_pe)
         self.k0_vac = 2 * pi / self.wavelength # Laser wavenumber in a vacuum
@@ -92,8 +94,6 @@ class Laser_Plasma_Params:
     # @param self  The object pointer
     def read_data(self):
         self.grid_data = sdf.read(self.directory+'grid_data_0000.sdf', dict=True) # for initial set-up
-        self.field_data_0 = sdf.read(self.directory+'fields_0000.sdf', dict=True) # for working out dt etc
-        self.field_data_1 = sdf.read(self.directory+'fields_0001.sdf', dict=True) # for working out dt etc
         self.data_final = sdf.read(self.directory+'grid_data_0001.sdf', dict=True) # for end simulation time
 
     ## get_spatio_temporal
@@ -102,6 +102,7 @@ class Laser_Plasma_Params:
     # @param self  The object pointer
     # @param mic  (Logical) Output grid in microns
     def get_spatio_temporal(self, mic = False):
+        self.read_data()
         self.grid = np.array((self.grid_data['Grid/Grid'].data)).reshape(-1) # grid edges in metres (field positions)
         self.nodes = np.zeros(len(self.grid)-1) # centre nodes (thermodymanic variable location)
         for i in range(1, len(self.grid)):
@@ -110,17 +111,14 @@ class Laser_Plasma_Params:
         
         self.dx = self.grid[1]-self.grid[0] # grid spacing
         self.Lx = self.grid[-1] # length of x domain in metres
-        self.nx = len(self.field_data_0['Electric Field/Ex'].data) # grid resoloution (number of cells)
-        
-            
-        self.dt = self.field_data_1['Header']['time'] - self.field_data_0['Header']['time'] # time step between field data dumps in seconds
 
         self.t_end = self.data_final['Header']['time'] # Total sim time period in seconds
+        self.dt = self.t_end / self.timesteps
         self.time = np.linspace(0, self.t_end, self.timesteps, endpoint=True) # Total time array for field data dumps in seconds
         
         # Normalised fourier space
-        self.k_space = np.fft.fftshift(np.fft.fftfreq(self.nx, d = self.dx / 2 / pi)) / self.k0_vac # k-space 
-        self.omega_space = np.fft.fftshift(np.fft.fftfreq(self.timesteps, d = self.dt / 2 / pi)) / self.omega0 # omega-space
+        self.k_space = 2.0*pi*np.fft.fftshift(np.fft.fftfreq(self.nx, d = self.dx)) / self.k0_vac # k-space 
+        self.omega_space = 2.0*pi*np.fft.fftshift(np.fft.fftfreq(self.timesteps, d = self.dt)) / self.omega0 # omega-space
 
         # output in microns (better for plots)
         if mic:
@@ -134,6 +132,7 @@ class Laser_Plasma_Params:
     # Calculates plasma parameters/variables
     # @param self  The object pointer               
     def get_plasma_param(self):
+        self.read_data()
         # electron number density
         self.ne_data = np.array(self.grid_data['Derived/Number_Density/electrons'].data) # Initial number density throughout domain in m^-3
         self.ne = np.average(self.ne_data) # Average initial number density in m^-3
@@ -160,12 +159,15 @@ class Laser_Plasma_Params:
     #
     # Calculates SRS scattered wavenumber and frequency
     # @param self  The object pointer
-    # @param ne  Electron number density 
+    # # @param ne  Electron number density 
     def get_matching_conds(self, ne):
+        
+       # SRS matching conditions
+       # omega_s = omega_0 - omega_EPW
+       # k_s = k_0 - k_EPW
 
-        # SRS matching conditions
-        # omega_s = omega_0 - omega_EPW
-        # k_s = k_0 - k_EPW
+       self.get_plasma_param()
+       self.get_spatio_temporal()
 
        # Back-scatter
        self.k_epw_bs = brentq(lambda x: srs_matching(x, self.k0, ne, self.v_th, self.omega0), self.k0, 2*self.k0) # EPW wavenumber
@@ -193,7 +195,7 @@ class Laser_Plasma_Params:
     #
     # Calculates SRS (backscatter) phase velocity at n = ne
     # @param self  The object pointer
-    # @param ne  Electron number density      
+    # # @param ne  Electron number density      
     def get_srs_phase_vel(self, ne):
 
         self.get_matching_conds(ne = ne)

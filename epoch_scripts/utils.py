@@ -44,8 +44,8 @@ J_tot_KeV = 6.242e+15
 ## read_input
 #
 # Read inputs in input.deck in chosen directory
-# @param dir  Directory which holds input.deck file you want to read (str)
-# @param param  Specific paramter to read from input file ('intensity', 'momentum', 'ppc' or 'ne_scale_len')
+# @param dir : Directory which holds input.deck file you want to read (str)
+# @param param : Specific paramter to read from input file ('intensity', 'momentum', 'ppc' or 'ne_scale_len')
 def read_input(dir, param):
     
     line = []
@@ -58,9 +58,11 @@ def read_input(dir, param):
                     continue
 
                 if param == 'intensity':
-                    if words[0] == "intensity":
+                    #if words[0] == "intensity":
+                    if words[0] == "intensity_w_cm2":
                         found = True
-                        return float(words[2])/1e4
+#                         return float(words[2])/1e4
+                        return float(words[2])
 
                 elif param == 'momentum':
                     if words[0] == "range1":
@@ -72,6 +74,7 @@ def read_input(dir, param):
                     if words[0] == "PPC":
                         found = True
                         return float(words[2])
+
 
                 elif param == 'ne_scale_len':
                     if words[0] == "Ln":
@@ -89,8 +92,8 @@ def read_input(dir, param):
 ## loss_func
 #
 # Calculates loss function to compare fits
-# @param fit  Fit data
-# @param data  Sim data
+# @param fit : fit data
+# @param data : sim data
 def loss_func(fit, data):
     N = len(data)
     sum_ = 0
@@ -106,9 +109,9 @@ def loss_func(fit, data):
 ## moving_av
 #
 # Finds movng average of an array using scipys uniform_filter1d function
-# @param Q  Data array 
-# @param span  Length of data 
-# @param period  Period to average over
+# @param Q : Data array 
+# @param span : length of data 
+# @param period : period to average over
 def moving_av(Q, span, period = 10):
     return uniform_filter1d(Q, size = span // period)
 
@@ -117,8 +120,8 @@ def moving_av(Q, span, period = 10):
 ## replace_line
 #
 # Function rewrite line in input.deck via python
-# @param line_in  Original line in input.deck 
-# @param line_out  Repacement of line_in in input.deck
+# @param line_in : original line in input.deck 
+# @param line_out : repacement of line_in in input.deck
 def replace_line(line_in, line_out, fname):
   finput = fileinput.input(fname, inplace=1)
   for i, line in enumerate(finput):
@@ -129,8 +132,8 @@ def replace_line(line_in, line_out, fname):
 ## append_list_as_row
 #
 # Append data to csv file (for appending I and I_SRS result)
-# @param file_name  File name of csv file 
-# @param list_of_elem  List to write to csv file 
+# @param file_name : file name of csv file 
+# @param list_of_elem : list to write to csv file 
 def append_list_as_row(file_name, list_of_elem):
     # Open file in append mode
     with open(file_name, 'a+', newline='') as write_obj:
