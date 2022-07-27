@@ -2,23 +2,27 @@ from utils import *
 from plasma_calc import *
 from fields_calc import *
 from hot_elec_calc import *
-import time
 
 ## run_epoch
 #
 # Runs epoch1d simulations for set intensity 
-# @param intensity : Intensity to write in input.deck 
+# @param inputs  1D array of length two, [intensity, density scale length] 
 # @param data_dir : Directory to store epoch data to and where the input.deck file is
 # @param output : Ouput to command line (True) or to run.log file (False)
 # @param np : Number of processors to eun epoch1d on (MPI)    
-def run_epoch(intensity, data_dir = 'Data', output = False, npro = 4):
+def run_epoch(inputs, data_dir = 'Data', output = False, npro = 4):
+    if np.size(inputs) != 2:
+            raise ValueError('ERROR: inputs must have length == 2 [intensity, density scale length]')
+    intensity = inputs[0]
+    Ln = inputs[1]
     dir = os.getenv('EPOCH1D')
     try:
         os.mkdir(data_dir)
     except:
         os.system('rm '+str(data_dir)+'/*sdf')
     os.system(f'cp {dir}/input.deck ' + str(data_dir)+'/input.deck')
-    replace_line('intensity =', f'intensity = {intensity}', fname = str(data_dir)+'/input.deck')
+    replace_line('intensity_w_cm2 =', f'intensity = {intensity}', fname = str(data_dir)+'/input.deck')
+    replace_line('Ln =', f'Ln = {Ln}', fname = str(data_dir)+'/input.deck')
     if output:
         os.system(f'./epoch.sh ' + str(data_dir) + ' ' + str(npro) + ' log')
     else:
@@ -29,65 +33,59 @@ def run_epoch(intensity, data_dir = 'Data', output = False, npro = 4):
 
 ## get_metrics_res
 #
-# Runs epoch1d simulations for changing intensity and ouptputs backsactter SRS intensity and T_hot
-# @param I_array : Intensity array (list of data to sim) 
-# @param dir : Directory to store epoch data to and where the input.deck file is
-# @param npro : Number of processors to eun epoch1d on (MPI)
-# # @param fname : filename for csv writer for back up             
-def get_metrics_res(I_array, dir, npro = 4, fname = 'run_epoch.csv'):
-
+# Finds the backscattered intesnity, hot electron temperature and fraction of electrons with E>100 keV.
+# Results are appended to json files for the inputs (I, L) and outputs (I_srs, T, E_frac)
+# @param dir : Directory where the resulting sdf files are stored.        
+def get_metrics_res(dir):
+    print(f'Getting Metric Results for {dir} Directory')
+    # Create folder to store training data files
+    epoch_path = os.getenv('EPOCH_SURRA')
+    fname_in = f'{epoch_path}/training_results/train_inputs.json'
+    fname_out = f'{epoch_path}/training_results/train_outputs.json'
     try:
-        os.mkdir('metric_results')
+        os.mkdir(f'{epoch_path}/training_results')
     except:
         print('results directory exists')
-
     try:
-        os.system(r'touch ' + str(fname))
-        print(str(fname) + ' created for back up')
+        os.path.exists(fname_in)
+        with open(fname_in, 'r') as f:
+            train_inputs = json.load(f)
     except:
-        print(str(fname) + ' exists, using for back up')
+        train_inputs = []
+        with open(fname_in, 'w') as f:
+            json.dump(train_inputs, f, indent=1) 
+    try:
+        os.path.exists(fname_out)
+        with open(fname_out, 'r') as f:
+            train_outputs = json.load(f)
+    except:
+        train_outputs = []
+        with open(fname_out, 'w') as f:
+            json.dump(train_outputs, f, indent=1) 
         
+    #Find the metric results and append to respective JSON files
+    epoch_data = Laser_Plasma_Params(dir = dir)
+    I = epoch_data.intensity
+    Ln = epoch_data.Ln
+    inputs = [I, Ln]
+    train_inputs.append(inputs)
+    with open(fname_in, 'w') as f:
+        json.dump(train_inputs, f, indent=1)
 
-    I_SRS_data = np.array([])
-    T_hot_data = np.array([])
-    E_frac_data = np.array([])
-    I_L_data = np.array([])
-
-    fname_srs = 'metric_results/I_SRS_Data3.npy'
-    fname_T = 'metric_results/T_hot_Data3.npy'
-    fname_E = 'metric_results/E_frac_data3.npy'
-    fname_I = 'metric_results/I_L_data3.npy'
-    for I in I_array:
-        t1 = time.time()
-        print('###########################')
-        print('Strting I = ', I/1e15, ' 10^15 W/cm^2')
-        run_epoch(I, data_dir = dir, output = True, npro = npro)
-        epoch_data = Laser_Plasma_Params(dir = dir)
-        Ln = epoch_data.Ln / micron # in microns
-        epoch_fields = EM_fields(dir = dir)
-        res_srs = epoch_fields.get_flux_grid_av(ncells = 30, laser = False)
-        he = hot_electron(dir = dir)
-        res_T = he.get_hot_e_temp(n = 5, av=True, smooth = False)
-        res_E_frac = he.get_energy_frac(smooth = False)
-        
-        res = [I, Ln, res_srs, res_srs/I, res_T, res_E_frac]
-
-        append_list_as_row(fname, res)
-        
-        I_SRS_data = np.append(I_SRS_data, res_srs)
-        T_hot_data = np.append(T_hot_data, res_T)
-        E_frac_data = np.append(E_frac_data, res_E_frac)
-        
-        print('I_SRS = ', res_srs/1e13, ' 10^13 W/cm^2')
-        print('P = ', res_srs/I)
-        print('T_hot = ', res_T, ' keV ')
-        print('E_frac = ', res_E_frac*100, ' % ')
-        t2 = time.time()
-        print('---------------------------')
-        print('Time Elapsed = ', (t2 - t1)/60 , ' Minutes')
-        print('---------------------------')
-    print('Writing Data to .npy files')   
-    np.save(fname_srs, I_SRS_data)
-    np.save(fname_T, T_hot_data)
-    np.save(fname_E, E_frac_data)
-    np.save(fname_I, I_L_data)
+    epoch_fields = EM_fields(dir = dir)
+    hot_e_data = hot_electron(dir = dir)
+    start = time.time()
+    P = epoch_fields.get_flux_grid_av(ncells = 10, signal = 'bsrs', refelctivity = False)
+    time_P = time.time()
+    print(f'Got Backscatter Intesnisty In {time_P-start} seconds : I_srs = {P}')
+    T = hot_e_data.get_hot_e_temp(n = 4, av = True)
+    time_T = time.time()
+    print(f'Got Temperature In {time_T-time_P} seconds : T = {T} keV')
+    E_100_frac = hot_e_data.get_energy_frac_bound(bounds = [100, 999999999])
+    time_E = time.time()
+    print(f'Got E>100 keV Fraction In {time_E-time_T} seconds : E_frac = {E_100_frac}')
+    outputs = [[P], [T], [E_100_frac]]
+    train_outputs.append(outputs)
+    with open(fname_out, 'w') as f:
+        json.dump(train_outputs, f, indent=1)
+    
