@@ -165,7 +165,7 @@ class hot_electron:
     # @param n : Number of segments.
     # @param plot : (Logical) Plots the fits and loss functions.
     # @param log : (Logical) Plot y-axis set to log scale
-    def fit_maxwellians(self, n, plot = False, log = False):  
+    def fit_maxwellians(self, n = 5, plot = False, log = False):  
         # Enforce that n is a positive integer      
         if not isinstance(n,int) or (n < 1):
             raise Exception("ERROR: n argument must be an integer > 0")
@@ -265,10 +265,10 @@ class hot_electron:
             self.T_hot = np.average(T_vals, weights = A)
         # Find average of the found singular tempeartures for 1 to n segment fits
         if av:
-            nfits = np.arange(1, n+1)
+            nfits = np.linspace(1, n+1)
             T_data = []
-            for n in nfits:
-                T_vals, A, fits, fits_full = self.fit_maxwellians(n = n, plot = False)
+            for i in range(1, n+1):
+                T_vals, A, fits, fits_full = self.fit_maxwellians(n = int(i), plot = False)
                 T_est = np.average(T_vals, weights = A)
                 T_data.append(T_est)
             self.T_hot_av = np.average(T_data[:])
@@ -317,7 +317,14 @@ class hot_electron:
             raise ValueError('ERROR: bounds must specify start and stop energies')
         if bounds[1] < bounds[0]:
             raise ValueError('ERROR: bounds must be in ascending order')
+        if bounds[1] < 0 or bounds[0] < 0:
+            raise ValueError('ERROR: bounds must be greater than 0')
         E, f = self.get_flux_dist()
-        idx = np.where(bounds[0] <= E*J_tot_KeV < bounds[1])[0]
-        res = np.trapz(y=f[idx:]*E[idx:], x =E[idx:]) / np.trapz(y=f*E, x =E)
+        idx1 = np.where(bounds[0] <= E*J_tot_KeV)[0]
+        if len(idx1) == 0:
+            return 0.0
+        else:
+            idx1 = idx1[0]
+        idx2 = np.where(E*J_tot_KeV <= bounds[1])[0][-1]
+        res = np.trapz(y=f[idx1:idx2], x =E[idx1:idx2]) / np.trapz(y=f, x =E)
         return res
