@@ -8,8 +8,6 @@ from plasma_calc import *
 # @param omega_s  Sampling rate (sampling frequency)
 # @param M   Length of the filter kernel (must be odd)
 def winsincFIR(omega_c,omega_s,M):
-    if not isinstance(M,int) or (M%2 == 0):
-        raise Exception("ERROR: M must be an odd integer")
     # cutoff frequency shoudl be a fraction of sampling frequency
     ker = np.sinc((omega_c / omega_s) * (np.arange(M) - (M - 1)/2))
     # Blackman window used for smooting filter
@@ -70,7 +68,6 @@ class EM_fields:
     # @param self  The object pointer
     # @param ax  String to set direction you want (i.e x,y,z)
     def get_2D_Electric_Field(self, ax):
-
         if ax == 'x':
             field_str = 'Electric Field/Ex' # Ex(x,t)
         elif ax == 'y':
@@ -78,14 +75,13 @@ class EM_fields:
         elif ax == 'z':
             field_str = 'Electric Field/Ez' # Ez(x,t)
         else:
-            raise ValueError('ERROR: Please set ax to either x, y or z' )
+            return print('ERROR: Please set ax to either x, y or z' )
         # create space-time electric field array
         E = np.zeros((self.nx, self.timesteps))
         for i in range(self.nfiles):
             fname = self.directory+'/fields_'+str(i).zfill(4)+'.sdf'
             data = sdf.read(fname, dict = True)
-            field = data[field_str].data
-            E[:, i] = field
+            E[:, i] = data[field_str].data
         return E
     
     ## get_2D_Magnetic_Field
@@ -101,14 +97,13 @@ class EM_fields:
         elif ax == 'z':
             field_str = 'Magnetic Field/Bz' # Bz(x,t)
         else:
-            raise ValueError('ERROR: Please set ax to either x, y or z' )
+            return print('ERROR: Please set ax to either x, y or z' )
         # create space-time magnetic field array
         B = np.zeros((self.nx, self.timesteps))
         for i in range(self.nfiles):
             fname = self.directory+'/fields_'+str(i).zfill(4)+'.sdf'
             data = sdf.read(fname, dict = True)
-            field = data[field_str].data
-            B[:, i] = field
+            B[:, i] = data[field_str].data
         return B
 
    
@@ -132,7 +127,7 @@ class EM_fields:
         elif field == 'Bz':
             array = self.get_2D_Magnetic_Field(ax = 'z') # Bz(x,t) field
         else:
-            raise ValueError('ERROR: Please set field to either Ex, Ey, Ez, Bx, By or Bz' )
+            print('ERROR: Please set field to either Ex, Ey, Ez, Bx, By or Bz' )
 
         # 2D FFT
         tilde_array= np.fft.fft2(array)
@@ -168,7 +163,7 @@ class EM_fields:
         elif field == 'Bz':
             array = self.get_2D_Magnetic_Field(ax = 'z') # Bz(x,t) field
         else:
-            raise ValueError('ERROR: Please set field to either Ex, Ey, Ez, Bx, By or Bz' )
+            print('ERROR: Please set field to either Ex, Ey, Ez, Bx, By or Bz' )
 
         # 1D FFT in time
         time_FFT = np.zeros((self.nx, self.timesteps), dtype = 'complex_')
@@ -202,7 +197,7 @@ class EM_fields:
         elif field == 'Bz':
             array = self.get_2D_Magnetic_Field(ax = 'z') # Bz(x,t) field
         else:
-            raise ValueError('ERROR: Please set field to either Ex, Ey, Ez, Bx, By or Bz' )
+            print('ERROR: Please set field to either Ex, Ey, Ez, Bx, By or Bz')
 
         # Transpose to get field in the form (t,x) rather than (x,t)
         array = array.T 
@@ -355,7 +350,7 @@ class EM_fields:
         elif signal == 'laser':
             Ey, Bz = self.get_filtered_signals(laser = True) # Filtered Ey and Bz fields
         else:
-            raise ValueError('ERROR: Please set signal to bsrs, fsrs or laser' )
+            return print('please set signal to either bsrs, fsrs or laser')
             
         W_cm2 = 1e4 # Convert to W_cm2
         factor = mu0*W_cm2 # Denominator of Sx
@@ -397,8 +392,9 @@ class EM_fields:
     # @param self  The object pointer
     # @param ncells  Number of cells to average over (default 50)
     # @param signal  String to set what signal is requires (either 'bsrs', 'fsrs' or 'laser')
-    def get_flux_grid_av(self, ncells = 10, signal = 'bsrs'):
-        St_av = np.abs(self.get_flux(signal = signal, time_series = False))
+    # @param reflectivity  (Logical) To return reflectivity
+    def get_flux_grid_av(self, ncells = 10, signal = 'bsrs', refelctivity = False):
+        St_av = self.get_flux(signal = signal, time_series = False)
         # for forward travelling signals, we want to average close to the right-hand boundary
         if signal == 'laser' or signal == 'fsrs':
             sum_ = 0
@@ -410,4 +406,7 @@ class EM_fields:
             for i in range(ncells):
                 sum_ += St_av[i]
         S_av = sum_/ncells
-        return S_av
+        if refelctivity:
+            return S_av/self.epoch_data.intensity
+        else:
+            return S_av
