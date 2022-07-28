@@ -2,31 +2,38 @@ from utils import *
 from plasma_calc import *
 from fields_calc import *
 from hot_elec_calc import *
+from sim_setup import *
 
 ## run_epoch
 #
 # Runs epoch1d simulations for set intensity 
 # @param inputs  1D array of length two, [intensity, density scale length] 
-# @param data_dir : Directory to store epoch data to and where the input.deck file is
-# @param output : Ouput to command line (True) or to run.log file (False)
-# @param np : Number of processors to eun epoch1d on (MPI)    
-def run_epoch(inputs, data_dir = 'Data', output = False, npro = 4):
+# @param dir  Directory to store epoch data to and where the input.deck file is
+# @param input_file  Input file name in the input_decks directory
+# @param output  Ouput to command line (True) or to run.log file (False)
+# @param np  Number of processors to eun epoch1d on (MPI)    
+def run_epoch(inputs, dir = 'Data', input_file = 'input_0.15nc_mid.deck', output = False, npro = 4):
     if np.size(inputs) != 2:
             raise ValueError('ERROR: inputs must have length == 2 [intensity, density scale length]')
-    intensity = inputs[0]
+    I = inputs[0]
     Ln = inputs[1]
-    dir = os.getenv('EPOCH1D')
-    try:
-        os.mkdir(data_dir)
-    except:
-        os.system('rm '+str(data_dir)+'/*sdf')
-    os.system(f'cp {dir}/input.deck ' + str(data_dir)+'/input.deck')
-    replace_line('intensity_w_cm2 =', f'intensity = {intensity}', fname = str(data_dir)+'/input.deck')
-    replace_line('Ln =', f'Ln = {Ln}', fname = str(data_dir)+'/input.deck')
+    epoch_path = os.getenv('EPOCH_SURRA')
+    create_dir(dir)
+    input_deck(I, Ln, dir, input_file)
+    # try:
+    #     os.mkdir(dir)
+    # except:
+    #     os.system('rm '+str(dir)+'/*sdf')
+    # try:
+    #     os.system(f'cp {epoch_path}/input_decks/{input_file}' + str(dir)+'/input.deck')
+    # except:
+    #     return print('ERROR: Ensure the input_file name is correct as in the input_decks directory')
+    # replace_line('intensity_w_cm2 =', f'intensity = {intensity}', fname = str(dir)+'/input.deck')
+    # replace_line('Ln =', f'Ln = {Ln}', fname = str(dir)+'/input.deck')
     if output:
-        os.system(f'./epoch.sh ' + str(data_dir) + ' ' + str(npro) + ' log')
+        os.system(f'{epoch_path}/epoch.sh ' + str(dir) + ' ' + str(npro) + ' log')
     else:
-        os.system(f'./epoch.sh ' + str(data_dir) + ' ' + str(npro))
+        os.system(f'{epoch_path}/epoch.sh ' + str(dir) + ' ' + str(npro))
 
         
         
