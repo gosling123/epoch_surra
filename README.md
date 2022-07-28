@@ -6,6 +6,9 @@ Repo for PX915 summer project
 
 Clone this repository inside the epoch1d director once you have a working copy of EPOCH on your machiene. The various python scripts contain classes and functions that aid in the calculation of plasma quantities and LPI metrics. Gaussian Process regression scripts are also contained within this repository for if you want to produce a surrogate for backscattered SRS intensity and hot-electron temperature.
 
+To make full use of the scripts, please add the path to this directory to your .bashrc, with the name `EPOCH_SURRA`.
+
+
 ## Python package dependencies:
 #### (NOTE: sdf package comes with EPOCH. Instructions to install package are given in the Using EPOCH section, please do not do pip3 install sdf as this is a seprate package.)
 
