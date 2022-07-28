@@ -7,29 +7,25 @@ from sim_setup import *
 ## run_epoch
 #
 # Runs epoch1d simulations for set intensity 
-# @param inputs  1D array of length two, [intensity, density scale length] 
+# @param I  Intensity of laser (W/cm^2)
+# @param Ln  Density scale length (m)
+# @param ppc  Particles per cell
 # @param dir  Directory to store epoch data to and where the input.deck file is
 # @param input_file  Input file name in the input_decks directory
 # @param output  Ouput to command line (True) or to run.log file (False)
 # @param np  Number of processors to eun epoch1d on (MPI)    
-def run_epoch(inputs, dir = 'Data', input_file = 'input_0.15nc_mid.deck', output = False, npro = 4):
-    if np.size(inputs) != 2:
-            raise ValueError('ERROR: inputs must have length == 2 [intensity, density scale length]')
-    I = inputs[0]
-    Ln = inputs[1]
+def run_epoch(I, Ln, ppc, dir = 'Data', input_file = 'input_0.15nc_mid.deck', output = False, npro = 4):
+    if not isinstance(ppc,int) or (ppc < 1):
+            raise Exception("ERROR: ppc argument must be an integer > 0")
+    if not isinstance(npro,int) or (npro < 1):
+            raise Exception("ERROR: npro argument must be an integer > 0")
+    if not isinstance(dir,str):
+            raise Exception("ERROR: dir argument must be a string (directory)")
+    if not isinstance(input_file,str):
+            raise Exception("ERROR: input_file argument must be a string (.deck file)")
     epoch_path = os.getenv('EPOCH_SURRA')
     create_dir(dir)
-    input_deck(I, Ln, dir, input_file)
-    # try:
-    #     os.mkdir(dir)
-    # except:
-    #     os.system('rm '+str(dir)+'/*sdf')
-    # try:
-    #     os.system(f'cp {epoch_path}/input_decks/{input_file}' + str(dir)+'/input.deck')
-    # except:
-    #     return print('ERROR: Ensure the input_file name is correct as in the input_decks directory')
-    # replace_line('intensity_w_cm2 =', f'intensity = {intensity}', fname = str(dir)+'/input.deck')
-    # replace_line('Ln =', f'Ln = {Ln}', fname = str(dir)+'/input.deck')
+    input_deck(I, Ln, ppc, dir, input_file)
     if output:
         os.system(f'{epoch_path}/epoch.sh ' + str(dir) + ' ' + str(npro) + ' log')
     else:
@@ -42,8 +38,10 @@ def run_epoch(inputs, dir = 'Data', input_file = 'input_0.15nc_mid.deck', output
 #
 # Finds the backscattered intesnity, hot electron temperature and fraction of electrons with E>100 keV.
 # Results are appended to json files for the inputs (I, L) and outputs (I_srs, T, E_frac)
-# @param dir : Directory where the resulting sdf files are stored.        
+# @param dir  Directory where the resulting sdf files are stored.        
 def get_metrics_res(dir):
+    if not isinstance(dir,str):
+            raise Exception("ERROR: dir argument must be a string (directory)")
     print(f'Getting Metric Results for {dir} Directory')
     # Create folder to store training data files
     epoch_path = os.getenv('EPOCH_SURRA')
