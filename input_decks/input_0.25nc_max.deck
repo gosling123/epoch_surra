@@ -8,7 +8,7 @@ begin:constant
    temperature_in_ev = 4.5e3                         # Electron temperature in eV
    vte = sqrt(temperature_in_ev * ev/me)             # Thermal velocity
    e_te = 0.5 * me * vte*vte                         # Electron thermal energy [J]
-   PPC = 2048
+   PPC = 
 end:constant
 
 begin:control
