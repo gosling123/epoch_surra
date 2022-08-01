@@ -93,4 +93,61 @@ def get_metrics_res(dir):
     train_outputs.append(outputs)
     with open(fname_out, 'w') as f:
         json.dump(train_outputs, f, indent=1)
+
+
+## get_metrics_res_ensemble
+#
+# Finds the backscattered intesnity, hot electron temperature and fraction of electrons with E>100 keV.
+# Results are appended to json files for the inputs (I, L) and outputs (I_srs, T, E_frac). This is done 
+# for an ensemble of the same runs (different random particle set-ups).
+# @param dir  Directory where the resulting sdf files are stored.        
+def get_metrics_res_ensemble(dirs):
+    if len(dirs) == 0:
+        raise Exception("ERROR: dirs argument must be an array of directory names (ideally housing the same problem)")
+    print(f'Getting Metric Results for {dir} Directory')
+    # Create folder to store training data files
+    epoch_path = os.getenv('EPOCH_SURRA')
+    fname_in = f'{epoch_path}/training_results/train_inputs_ensemble.json'
+    fname_out = f'{epoch_path}/training_results/train_outputs_ensemble.json'
+    try:
+        os.mkdir(f'{epoch_path}/training_results')
+    except:
+        print('results directory exists')
+    try:
+        os.path.exists(fname_in)
+        with open(fname_in, 'r') as f:
+            train_inputs = json.load(f)
+    except:
+        train_inputs = []
+        with open(fname_in, 'w') as f:
+            json.dump(train_inputs, f, indent=1) 
+    try:
+        os.path.exists(fname_out)
+        with open(fname_out, 'r') as f:
+            train_outputs = json.load(f)
+    except:
+        train_outputs = []
+        with open(fname_out, 'w') as f:
+            json.dump(train_outputs, f, indent=1)
+    I = np.array([]) ; Ln = np.array([])
+    P = np.array([]) ; T = np.array([]); E_100_frac = np.array([])
+    for d in dirs:
+        #Find the metric results and append to respective JSON files
+        epoch_data = Laser_Plasma_Params(dir = dir)
+        I = np.append(I,epoch_data.intensity)
+        Ln = np.append(Ln, epoch_data.Ln)
+        epoch_fields = EM_fields(dir = d)
+        hot_e_data = hot_electron(dir = d)
+        P = np.append(P, epoch_fields.get_flux_grid_av(ncells = 10, signal = 'bsrs', refelctivity = False))
+        T = np.append(T, hot_e_data.get_hot_e_temp(n = 5, av = True))
+        E_100_frac = np.append(E_100_frac, hot_e_data.get_energy_frac_bound(bounds = [100, 999999999]))
+
+    inputs = [np.mean(I), np.mean(Ln)]
+    train_inputs.append(inputs)
+    with open(fname_in, 'w') as f:
+        json.dump(train_inputs, f, indent=1)
+    outputs = [[np.mean(P), np.std(P)], [np.mean(T), np.std(T)], [np.mean([E_100_frac]), np.std(E_100_frac)]]
+    train_outputs.append(outputs)
+    with open(fname_out, 'w') as f:
+        json.dump(train_outputs, f, indent=1)
     
