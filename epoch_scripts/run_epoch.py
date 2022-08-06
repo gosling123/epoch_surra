@@ -83,7 +83,7 @@ def get_metrics_res(dir):
     P = epoch_fields.get_flux_grid_av(ncells = 10, signal = 'bsrs', refelctivity = False)
     time_P = time.time()
     print(f'Got Backscatter Intesnisty In {time_P-start} seconds : I_srs = {P}')
-    T = hot_e_data.get_hot_e_temp(n = 4, av = True)
+    T = hot_e_data.get_hot_e_temp(n = 6, av = True)
     time_T = time.time()
     print(f'Got Temperature In {time_T-time_P} seconds : T = {T} keV')
     E_100_frac = hot_e_data.get_energy_frac_bound(bounds = [100, 999999999])
@@ -104,7 +104,6 @@ def get_metrics_res(dir):
 def get_metrics_res_ensemble(dirs):
     if len(dirs) == 0:
         raise Exception("ERROR: dirs argument must be an array of directory names (ideally housing the same problem)")
-    print(f'Getting Metric Results for {dir} Directory')
     # Create folder to store training data files
     epoch_path = os.getenv('EPOCH_SURRA')
     fname_in = f'{epoch_path}/training_results/train_inputs_ensemble.json'
@@ -133,7 +132,7 @@ def get_metrics_res_ensemble(dirs):
     P = np.array([]) ; T = np.array([]); E_100_frac = np.array([])
     for d in dirs:
         #Find the metric results and append to respective JSON files
-        epoch_data = Laser_Plasma_Params(dir = dir)
+        epoch_data = Laser_Plasma_Params(dir = d)
         I = np.append(I,epoch_data.intensity)
         Ln = np.append(Ln, epoch_data.Ln)
         epoch_fields = EM_fields(dir = d)

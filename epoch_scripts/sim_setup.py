@@ -58,7 +58,7 @@ def input_deck(I, Ln, ppc, dir, input_file = 'input_0.15nc_mid.deck'):
         os.system(f'cp {epoch_path}/input_decks/{input_file} {epoch_path}/{dir}/input.deck')
     except:
         return print('ERROR: Ensure the input_file name is correct as in the input_decks directory')
-    replace_line('intensity_w_cm2 =', f'intensity = {I}', fname = str(dir)+'/input.deck')
+    replace_line('intensity_w_cm2 =', f'intensity_w_cm2 = {I}', fname = str(dir)+'/input.deck')
     replace_line('Ln =', f'Ln = {Ln}', fname = str(dir)+'/input.deck')
     replace_line('PPC =', f'PPC = {ppc}', fname = str(dir)+'/input.deck')
 
@@ -68,7 +68,7 @@ def input_deck(I, Ln, ppc, dir, input_file = 'input_0.15nc_mid.deck'):
 # @param dir  Directory name
 # @param time  Time string in the form of hours:minutes:seconds (hh:mm:ss)
 # @param nodes  Number of computational nodes to request
-def avon(dir, fname = 'epoch.sbatch', time = '24:00:00',nodes = 1):
+def avon(dir, fname = 'epoch.sbatch', time = '2:00:00',nodes = 1):
     if not isinstance(nodes,int) or (nodes < 1):
             raise Exception("ERROR: nodes argument must be an integer > 0")
     if not isinstance(dir,str):
@@ -107,7 +107,7 @@ def avon(dir, fname = 'epoch.sbatch', time = '24:00:00',nodes = 1):
 # @param time  Time string in the form of hours:minutes:seconds (hh:mm:ss)
 # @param nodes  Number of computational nodes to request
 # @param hpc  (Logical) Whether to add hpc (avon) hob script or not
-def epoch_sim_dir(dir, input_file, I, Ln, ppc = 100, time = '24:00:00', nodes = 1, hpc = True):
+def epoch_sim_dir(dir, input_file, I, Ln, ppc = 100, time = '2:00:00', nodes = 1, hpc = True):
     if not isinstance(ppc,int) or (ppc < 1):
             raise Exception("ERROR: ppc argument must be an integer > 0")
     if not isinstance(dir,str):
@@ -160,7 +160,7 @@ def epoch_sim_sub_dir(dir, sub_dir, input_file, I, Ln, ppc = 100):
 # @param dir  Sub-directory name
 # @param time  Time string in the form of hours:minutes:seconds (hh:mm:ss)
 # @param nodes  Number of computational nodes to request
-def avon_sub_dirs(dir, sub_dir, fname = 'epoch.sbatch', time = '24:00:00',nodes = 1):
+def avon_sub_dirs(dir, sub_dir, fname = 'epoch.sbatch', time = '2:00:00',nodes = 1):
     if not isinstance(nodes,int) or (nodes < 1):
             raise Exception("ERROR: nodes argument must be an integer > 0")
     if not isinstance(dir,str):
@@ -196,10 +196,10 @@ def avon_sub_dirs(dir, sub_dir, fname = 'epoch.sbatch', time = '24:00:00',nodes 
 # @param sub_dirs  Sub-directories
 # @param time  Time string in the form of hours:minutes:seconds (hh:mm:ss)
 # @param nodes  Number of computational nodes to request
-def run_all_sub_dirs(dir, sub_dirs, time = '24:00:00', nodes = 1):
+def run_all_sub_dirs(dir, sub_dirs, time = '2:00:00', nodes = 1):
     if not isinstance(dir,str):
             raise Exception("ERROR: dir argument must be a string (directory)")
-    if not isinstance(sub_dirs,str):
+    if not isinstance(sub_dirs[0],str):
             raise Exception("ERROR: sub_dirs argument must be a string/array of strings (sub directory/directories)")
     if not isinstance(time,str):
             raise Exception("ERROR: time argument must be a string in the form of hours:minutes:seconds (hh:mm:ss)")
@@ -228,12 +228,12 @@ def run_all_sub_dirs(dir, sub_dirs, time = '24:00:00', nodes = 1):
 # @param input_file  Input file base to copy from input_decks folder
 # @param time  Time string in the form of hours:minutes:seconds (hh:mm:ss)
 # @param nodes  Number of computational nodes to request
-def hpc_run(dir, sub_dirs, I_array, Ln_array, ppc = 2048, input_file = 'input_0.15nc_mid.deck', time = '24:00:00', nodes = 1):
+def hpc_run(dir, sub_dirs, I_array, Ln_array, ppc = 2048, input_file = 'input_0.15nc_mid.deck', time = '2:00:00', nodes = 1):
         if not isinstance(ppc,int) or (ppc < 1):
                 raise Exception("ERROR: ppc argument must be an integer > 0")
         if not isinstance(dir,str):
                 raise Exception("ERROR: dir argument must be a string (directory)")
-        if not isinstance(sub_dirs,str):
+        if not isinstance(sub_dirs[0],str):
                 raise Exception("ERROR: sub_dirs argument must be a string/array of strings (sub directory/directories)")
         if not isinstance(input_file,str):
                 raise Exception("ERROR: input_file argument must be a string (.deck file)")
