@@ -32,25 +32,20 @@ plt.rcParams['ytick.labelsize'] = 20
 plt.rcParams['legend.fontsize'] = 20
 # Constants
 
-c = constants.c
-eps0 = constants.epsilon_0
-me = constants.m_e
-e = constants.e
-kB = constants.k
-keV_to_K = (e*1e3)/kB
-mu0 = constants.mu_0
-pi = np.pi
-pico = 1e-12
-micron = 1e-6
-nano = 1e-9
-J_tot_KeV = 6.242e+15
 
 
+def scale_axis(array, scale_array, rescale = False):
+    if rescale:
+        array = array*(scale_array.max() -scale_array.min()) + scale_array.min()
+        return array
+    else:
+        array = (array - scale_array.min())/(scale_array.max() - scale_array.min())
+        return array
 
 
-
-
-
-
+def read_json_file(fname):
+    with open(fname, 'r') as f:
+            data = json.load(f)
+    return np.array(data)
 
 
