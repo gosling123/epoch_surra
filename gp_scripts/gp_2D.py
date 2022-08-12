@@ -102,14 +102,17 @@ class LPI_GP_1D:
         self.X_train_noise = self.scale_input()[:,None]
         self.Y_train_noise = self.scale_output_var()[:,None]
 
+    def local_periodic_kern(self, X1, X2, l, var):
+        per = GPy.kern.StdPeriodic(input_dim=1, variance=var, lengthscale=l)
+        rbf = GPy.kern.RBF(input_dim=1, variance=var, lengthscale=l)
+        return per.K(X1,X2) * rbf.K(X1, X2)
 
     def update_noise_GP_kern(self, l, var):
-        self.kern_noise = GPy.kern.Brownian(input_dim=1, variance=var)
-        # self.kern_noise = GPy.kern.Brownian(input_dim=1, variance=var, lengthscale=l)
+        self.kern_noise = GPy.kern.StdPeriodic(input_dim=1, variance=var, lengthscale=l)
         self.K_noise = self.kern_noise.K(self.X_train_noise, self.X_train_noise)
 
-    def update_noise_GP_weights(self):
-        self.L_noise = np.linalg.cholesky(self.K_noise + 1e-6 * np.eye(len(self.X_train_noise)))
+    def update_noise_GP_weights(self, var_noise = 1e-6):
+        self.L_noise = np.linalg.cholesky(self.K_noise + var_noise * np.eye(len(self.X_train_noise)))
         self.weights_noise = np.linalg.solve(self.L_noise.T, np.linalg.solve(self.L_noise, self.Y_train_noise))
     
     def update_noise_gp(self, l, var):
@@ -136,8 +139,8 @@ class LPI_GP_1D:
 
 
     def optimise_noise_GP(self):
-        ells = np.geomspace(1e-4, 1, 50)
-        vars = np.geomspace(1e-4, 1, 50)
+        ells = np.geomspace(1e-4, 1, 20)
+        vars = np.geomspace(1e-4, 50, 20)
         self.log_L_noise = np.zeros((len(ells), len(vars)))
         for i, l in enumerate(ells):
             for j, v in enumerate(vars):
@@ -147,13 +150,15 @@ class LPI_GP_1D:
         idx = np.where(self.log_L_noise == np.array(self.log_L_noise).min())
         self.l_opt_noise = ells[idx[0][0]]
         self.var_opt_noise = vars[idx[1][0]]
-        print('l = ', ells[idx[0][0]], 'var = ', vars[idx[1][0]])
+        print('l = ' , self.l_opt_noise, 'var = ' , self.var_opt_noise)
         self.update_noise_gp(l = self.l_opt_noise, var = self.var_opt_noise)
 
-    def noise_GP_predict(self, X_star, scaled = False, get_variance = False):
+    def noise_GP_predict(self, X_star, scaled = False, get_std = False):
 
         if scaled == False:
             X_star = self.scale_input(X = X_star)
+
+        X_star = X_star[:,None]
         
         K_star_noise = self.kern_noise.K(X_star, X_star)
         k_star_noise = self.kern_noise.K(self.X_train_noise, X_star)
@@ -161,11 +166,11 @@ class LPI_GP_1D:
         f_star_noise = np.dot(k_star_noise.T, self.weights_noise)
         f_star_noise = self.scale_output_var(Y = f_star_noise, rescale = True)
 
-        if get_variance:
+        if get_std:
             v = np.linalg.solve(self.L_noise, k_star_noise)
             V_star_noise = K_star_noise - np.dot(v.T, v)
-            std_noise = np.sqrt(self.scale_output_var(Y = np.diag(V_star_noise), rescale=True))
-            return f_star_noise, std_noise
+            std_epi = np.sqrt(self.scale_output_var(Y = np.diag(V_star_noise), rescale=True))
+            return f_star_noise, std_epi
         else:
             return f_star_noise
 
@@ -227,18 +232,16 @@ class LPI_GP_1D:
         print('l = ', ells[idx[0][0]], 'var = ', vars[idx[1][0]])
         self.update_GP(l = self.l_opt, var = self.var_opt)
     
-    def GP_predict(self, X_star, get_variance = False):
-
-        X_star = X_star[:, None]
+    def GP_predict(self, X_star, get_std = False):
         
         self.K_star = self.kern.K(X_star, X_star)
         k_star = self.kern.K(self.X_train, X_star)
 
-        self.noise_var_star, err = self.noise_GP_predict(X_star, get_variance=True)
+        self.noise_var_star, err = self.noise_GP_predict(X_star, get_std=True)
         self.noise_cov_star = np.diag(self.noise_var_star.flatten())
         f_star = np.dot(k_star.T, self.weights)
         #add additional error from the above model
-        if get_variance:
+        if get_std:
             v = np.linalg.solve(self.L, k_star)
             V_star_epi = self.K_star - np.dot(v.T, v)
             std_epi  = np.sqrt(np.diag(V_star_epi))

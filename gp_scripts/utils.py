@@ -49,3 +49,12 @@ def read_json_file(fname):
     return np.array(data)
 
 
+def expav(a,t):
+    f1 = np.exp(-1.0/t)
+    f2 = 1.0 - f1
+    
+    res = np.zeros_like(a)
+    res[0] = a[0]
+    for i in range(1,len(a)):
+        res[i] = f1*res[i-1] + f2*a[i]
+    return res
