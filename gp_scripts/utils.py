@@ -19,10 +19,9 @@ import GPy
 from sklearn.model_selection import train_test_split
 import seaborn as sns
 from smt.sampling_methods import LHS
+import pickle
 
-
-plt.rcParams["figure.figsize"] = (20,3)
-plt.rcParams["figure.figsize"] = [15, 15]
+plt.rcParams["figure.figsize"] = [14, 10]
 plt.rcParams["figure.autolayout"] = True
 plt.rcParams['lines.linewidth'] = 2
 plt.rcParams['axes.labelsize'] = 20
@@ -49,12 +48,7 @@ def read_json_file(fname):
     return np.array(data)
 
 
-def expav(a,t):
-    f1 = np.exp(-1.0/t)
-    f2 = 1.0 - f1
-    
-    res = np.zeros_like(a)
-    res[0] = a[0]
-    for i in range(1,len(a)):
-        res[i] = f1*res[i-1] + f2*a[i]
-    return res
+def read_pickle_file(fname):
+    with open(fname, 'rb') as f:
+        data_dict = pickle.load(f)
+    return data_dict

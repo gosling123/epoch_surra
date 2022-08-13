@@ -104,11 +104,10 @@ class LPI_GP_1D:
         self.Y_train_noise = self.scale_output_var()[:,None]
 
     def update_noise_GP_kern(self, l, var):
-        # var = 1e-6
         self.kern_noise = GPy.kern.Exponential(input_dim=1, variance=var, lengthscale=l)
         self.K_noise = self.kern_noise.K(self.X_train_noise, self.X_train_noise)
 
-    def update_noise_GP_weights(self, var_noise = 1e-10):
+    def update_noise_GP_weights(self, var_noise = 1e-6):
         self.L_noise = np.linalg.cholesky(self.K_noise + var_noise * np.eye(len(self.X_train_noise)))
         self.weights_noise = np.linalg.solve(self.L_noise.T, np.linalg.solve(self.L_noise, self.Y_train_noise))
     
@@ -213,8 +212,8 @@ class LPI_GP_1D:
 
    
     def optimise_GP(self):
-        ells = np.geomspace(0.01, 100, 10)
-        vars = np.geomspace(0.01, 100, 10)
+        ells = np.geomspace(0.01, 20, 100)
+        vars = np.geomspace(0.01, 20, 100)
         self.log_L = np.zeros((len(ells), len(vars)))
         for i, l in enumerate(ells):
             for j, v in enumerate(vars):
@@ -240,19 +239,19 @@ class LPI_GP_1D:
             std_epi  = np.sqrt(np.diag(V_star_epi))
             V_star_noise = self.noise_cov_star
             std_noise  = np.sqrt(np.diag(V_star_noise))
+            std_noise = gaussian_filter(std_noise, sigma = 10)
             return f_star, std_epi, std_noise
         else:
             return f_star
 
-
-def GP_1D_predict_all(X_star, input_file, input_type, output_file, var_file):
+def GP_1D_predict_all(X_star, input_file, input_type, output_file,\
+                      var_file, fname = 'data_dict.pickle', save = False):
     output_types = ['P', 'T', 'E']
-    label = ['Reflectivity', 'Hot-Elctron Temperature', 'Fraction E>50 keV']
-    predicted_output = np.zeros((len(output_types), len(X_star)))
-    epistemic_error = np.zeros((len(output_types), len(X_star)))
-    noise_error = np.zeros((len(output_types), len(X_star)))
+    label = ['Reflectivity', 'Hot Electron Temperature', 'Fraction E>50 keV']
+    data_dict = {'input' : X_star.flatten(), 'output' : {}, 'error_epi' : {}, 'error_noise' : {}}
+    start = time.time()
     for i, out in enumerate(output_types):
-        start = time.time()
+        t1 = time.time()
         print(f'Generating output = {label[i]} GP')
         gp = LPI_GP_1D(input_file = input_file, input_type = input_type,\
                             output_file = output_file, output_type = out,\
@@ -263,8 +262,14 @@ def GP_1D_predict_all(X_star, input_file, input_type, output_file, var_file):
         gp.optimise_GP()
         print('Making predictions for X_star')
         Y_star, sig_epi, sig_noise = gp.GP_predict(X_star, get_std=True)
-        predicted_output[i] = Y_star
-        epistemic_error[i] = 2.0*sig_epi
-        noise_error[i] = 2.0*sig_noise
-        print(f'Finished {out} GP regression in {(time.time() - start)/60} minutes')
+        data_dict['output'][label[i]] = Y_star.flatten()
+        data_dict['error_epi'][label[i]] = 2.0*sig_epi.flatten()
+        data_dict['error_noise'][label[i]] = 2.0*sig_noise.flatten()
+        print(f'Finished {out} GP regression in {(time.time() - t1)/60} minutes')
         print('--------------------------------------------------------------------')
+    print(f'All ouput GP predictions completed in {(time.time() - start)/60} minutes')
+    if save:
+        with open(fname, 'wb') as f:
+            pickle.dump(data_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
+        print(f'Saved GP result dictioanry to {fname}')
+    return data_dict
