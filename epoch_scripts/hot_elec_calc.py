@@ -164,7 +164,7 @@ class hot_electron:
                 if log:
                     plt.yscale('log')
                 plt.xlabel(r'$E_e (keV)$')
-                plt.ylabel(r'$f_e(E)$')
+                plt.ylabel(r'$\phi_h(E)$')
                 plt.gcf().set_size_inches(10,6)
             else:
                 for e, f in zip(self.E_parts, self.flux_parts):
@@ -172,7 +172,7 @@ class hot_electron:
                 if log:
                     ax.set_yscale('log')
                 ax.set_xlabel(r'$E_e (keV)$')
-                ax.set_ylabel(r'$f_e(E)$')
+                ax.set_ylabel(r'$\phi_h(E)$')
             return None
         else:
             return self.E_parts, self.flux_parts
@@ -251,13 +251,13 @@ class hot_electron:
                 ax2.plot(E_parts[i]*J_tot_KeV, f, label = r'$A$ = ' + str(np.round(self.amplitudes[i]/self.amplitudes.max(), 3)) + ', $T$ = ' + str(np.round(self.T_vals[i], 2)) + ' keV')
             ax2.scatter(E_plot*J_tot_KeV, flux_plot, color = 'black', label = 'Data', alpha = 0.2)
             ax2.set_xlabel(r'$E (keV)$')
-            ax2.set_ylabel(r'$f_e(E)$')
+            ax2.set_ylabel(r'$\phi_h(E)$')
             ax2.legend()
 
             ax3.scatter(E_plot*J_tot_KeV, flux_plot, color = 'black', label = 'Data')
             ax3.plot(E_plot*J_tot_KeV, self.final_fit, color = 'red', label = 'Fit')
             ax3.set_xlabel(r'$E (keV)$')
-            ax3.set_ylabel(r'$f_e(E)$')
+            ax3.set_ylabel(r'$\phi_h(E)$')
             ax3.legend()
             if log:
                 ax2.set_yscale('log')
@@ -330,10 +330,10 @@ class hot_electron:
         E_h, f_h = self.split_dist(n = 1) # Hot electron region
         E, f = self.get_flux_dist() # Whole domain
         if self.idx == 0:
-            E_hot_frac = 0 # If there is said to be no hot electron region, set to zero
-            return self.E_hot_frac
+            E_hot_frac = 1e-10 # If there is said to be no hot electron region, set to zero
+            return E_hot_frac
         else:
-            E_hot_frac = np.trapz(y=f[self.idx:]*E[self.idx:], x =E[self.idx:]) / np.trapz(y=f*E, x =E)
+            E_hot_frac = np.trapz(y=f[self.idx:]/E[self.idx:], x =E[self.idx:]) / np.trapz(y=f/E, x =E)
             return E_hot_frac
 
     ## get_energy_frac_bound

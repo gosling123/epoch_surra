@@ -39,7 +39,7 @@ def run_epoch(I, Ln, ppc, dir = 'Data', input_file = 'input_0.15nc_mid.deck', ou
 # Finds the backscattered intesnity, hot electron temperature and fraction of electrons with E>100 keV.
 # Results are appended to json files for the inputs (I, L) and outputs (I_srs, T, E_frac)
 # @param dir  Directory where the resulting sdf files are stored.        
-def get_metrics_res(dir, input_fname = 'train_inputs.json', output_fname = 'train_outputs.json'):
+def get_metrics_res(dir, input_fname = 'train_inputs.json', output_fname = 'train_outputs.json', log = True):
     if not isinstance(dir,str):
             raise Exception("ERROR: dir argument must be a string (directory)")
     print(f'Getting Metric Results for {dir} Directory')
@@ -76,6 +76,8 @@ def get_metrics_res(dir, input_fname = 'train_inputs.json', output_fname = 'trai
     train_inputs.append(inputs)
     with open(fname_in, 'w') as f:
         json.dump(train_inputs, f, indent=1)
+    print(f'I = {I*1e-15} e15 w/cm^2')
+    print(f'Ln = {Ln*1e6} microns')
 
     epoch_fields = EM_fields(dir = dir)
     hot_e_data = hot_electron(dir = dir)
@@ -86,10 +88,13 @@ def get_metrics_res(dir, input_fname = 'train_inputs.json', output_fname = 'trai
     T = hot_e_data.get_hot_e_temp(n = 6, av = True)
     time_T = time.time()
     print(f'Got Temperature In {time_T-time_P} seconds : T = {T} keV')
-    E_50_frac = hot_e_data.get_energy_frac_bound(bounds = [50, 999999999])
+    E_frac = hot_e_data.get_energy_frac()
     time_E = time.time()
-    print(f'Got E>50 keV Fraction In {time_E-time_T} seconds : E_frac = {E_50_frac}')
-    outputs = [[P], [T], [E_50_frac]]
+    print(f'Got E Fraction In {time_E-time_T} seconds : E_frac = {E_frac}')
+    if log:
+        outputs = [[np.log(P)], [T], [np.log(E_frac)]]
+    else:
+        outputs = [[P], [T], [E_frac]]
     train_outputs.append(outputs)
     with open(fname_out, 'w') as f:
         json.dump(train_outputs, f, indent=1)
@@ -129,7 +134,7 @@ def get_metrics_res_ensemble(dirs):
         with open(fname_out, 'w') as f:
             json.dump(train_outputs, f, indent=1)
     I = np.array([]) ; Ln = np.array([])
-    P = np.array([]) ; T = np.array([]); E_50_frac = np.array([])
+    P = np.array([]) ; T = np.array([]); E_frac = np.array([])
     for d in dirs:
         #Find the metric results and append to respective JSON files
         epoch_data = Laser_Plasma_Params(dir = d)
@@ -139,13 +144,13 @@ def get_metrics_res_ensemble(dirs):
         hot_e_data = hot_electron(dir = d)
         P = np.append(P, epoch_fields.get_flux_grid_av(ncells = 10, signal = 'bsrs', refelctivity = True))
         T = np.append(T, hot_e_data.get_hot_e_temp(n = 5, av = True))
-        E_50_frac = np.append(E_50_frac, hot_e_data.get_energy_frac_bound(bounds = [50, 999999999]))
+        E_frac = np.append(E_frac, hot_e_data.get_energy_frac())
 
     inputs = [np.mean(I), np.mean(Ln)]
     train_inputs.append(inputs)
     with open(fname_in, 'w') as f:
         json.dump(train_inputs, f, indent=1)
-    outputs = [[np.mean(P), np.std(P)], [np.mean(T), np.std(T)], [np.mean([E_50_frac]), np.std(E_50_frac)]]
+    outputs = [[np.mean(P), np.std(P)], [np.mean(T), np.std(T)], [np.mean([E_frac]), np.std(E_frac)]]
     train_outputs.append(outputs)
     with open(fname_out, 'w') as f:
         json.dump(train_outputs, f, indent=1)

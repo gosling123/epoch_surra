@@ -30,7 +30,7 @@ class LPI_GP_1D:
             return None
         return input
 
-    def get_noise_var(self):
+    def get_noise_var(self, log = True):
         os.path.exists(self.var_file)
         with open(self.var_file, 'r') as f:
             train_outputs = json.load(f)
@@ -49,7 +49,10 @@ class LPI_GP_1D:
         else:
             print('ERROR: Please set output type to either P, T or E (str)')
             return None
-        return noise_var
+        if log:
+            return np.log(noise_var)
+        else:
+            return noise_var
 
     def get_output(self):
         os.path.exists(self.output_file)
@@ -135,7 +138,7 @@ class LPI_GP_1D:
 
 
     def optimise_noise_GP(self):
-        ells = np.geomspace(1e-5, 1, 50)
+        ells = np.geomspace(1e-5, 10, 50)
         vars = np.geomspace(1e-5, 1, 50)
         self.log_L_noise = np.zeros((len(ells), len(vars)))
         for i, l in enumerate(ells):
@@ -149,24 +152,19 @@ class LPI_GP_1D:
         print('l = ' , self.l_opt_noise, 'var = ' , self.var_opt_noise)
         self.update_noise_gp(l = self.l_opt_noise, var = self.var_opt_noise)
 
-    def noise_GP_predict(self, X_star, scaled = False, get_std = False):
+    def noise_GP_predict(self, X_star, scaled = False):
 
         if scaled == False:
             X_star = self.scale_input(X = X_star)
 
-        K_star_noise = self.kern_noise.K(X_star, X_star)
         k_star_noise = self.kern_noise.K(self.X_train_noise, X_star)
 
         f_star_noise = np.dot(k_star_noise.T, self.weights_noise)
         f_star_noise = self.scale_output_var(Y = f_star_noise, rescale = True)
-
-        if get_std:
-            v = np.linalg.solve(self.L_noise, k_star_noise)
-            V_star_noise = K_star_noise - np.dot(v.T, v)
-            std_epi = np.sqrt(self.scale_output_var(Y = np.diag(V_star_noise), rescale=True))
-            return f_star_noise, std_epi
-        else:
-            return f_star_noise
+        f_star_noise = np.exp(f_star_noise.flatten())
+        # f_star_noise = gaussian_filter(f_star_noise, sigma = 8)  
+        # f_star_noise = uniform_filter1d(f_star_noise, size = int(0.05*len(X_star)))       
+        return f_star_noise
 
     def set_training_data(self):
         self.X_train = self.get_input()[:,None]
@@ -176,11 +174,10 @@ class LPI_GP_1D:
 
     def update_GP_kern(self, l, var):
         l *= self.X_range
-        var *= self.Y_range
-        self.noise_var = self.get_noise_var().flatten()
+        var *= self.Y_range**2
+        self.noise_var = self.get_noise_var(log = False).flatten()
         self.noise_cov = np.diag(self.noise_var)
-
-        self.kern = GPy.kern.RatQuad(input_dim=1, variance=var, lengthscale=l)
+        self.kern = GPy.kern.RBF(input_dim=1, variance=var, lengthscale=l)
         self.K = self.kern.K(self.X_train, self.X_train)
         self.K += self.noise_cov
 
@@ -212,8 +209,8 @@ class LPI_GP_1D:
 
    
     def optimise_GP(self):
-        ells = np.geomspace(0.01, 20, 100)
-        vars = np.geomspace(0.01, 20, 100)
+        ells = np.geomspace(0.001, 30, 50)
+        vars = np.geomspace(0.001, 30, 50)
         self.log_L = np.zeros((len(ells), len(vars)))
         for i, l in enumerate(ells):
             for j, v in enumerate(vars):
@@ -230,19 +227,34 @@ class LPI_GP_1D:
         K_star = self.kern.K(X_star, X_star)
         k_star = self.kern.K(self.X_train, X_star)
 
-        self.noise_var_star = self.noise_GP_predict(X_star, get_std=False)
+        self.noise_var_star = self.noise_GP_predict(X_star)
         self.noise_cov_star = np.diag(self.noise_var_star.flatten())
+
         f_star = np.dot(k_star.T, self.weights)
         if get_std:
             v = np.linalg.solve(self.L, k_star)
             V_star_epi = K_star - np.dot(v.T, v)
-            std_epi  = np.sqrt(np.diag(V_star_epi))
             V_star_noise = self.noise_cov_star
-            std_noise  = np.sqrt(np.diag(V_star_noise))
-            std_noise = gaussian_filter(std_noise, sigma = 10)
-            return f_star, std_epi, std_noise
+            if self.output_type == 'T':
+                std_epi  = np.sqrt(np.diag(V_star_epi))
+                std_noise  = np.sqrt(np.diag(V_star_noise))
+                std_noise = gaussian_filter(std_noise, sigma = 10)
+                return f_star.flatten(), std_epi.flatten(), std_noise.flatten()
+            else:
+                f_star = np.exp(f_star.flatten())
+                V_epi = f_star**2 * np.diag(V_star_epi)
+                std_epi = np.sqrt(V_epi)
+
+                V_noise = f_star**2 * np.diag(V_star_noise)
+                std_noise = np.sqrt(V_noise)
+                std_noise = gaussian_filter(std_noise, sigma = 10)
+
+                return f_star.flatten(), std_epi.flatten(), std_noise.flatten()
         else:
-            return f_star
+            if self.output_type == 'T':
+                return f_star.flatten()
+            else:
+                return np.exp(f_star).flatten()
 
 def GP_1D_predict_all(X_star, input_file, input_type, output_file,\
                       var_file, fname = 'data_dict.pickle', save = False):
