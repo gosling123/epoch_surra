@@ -73,26 +73,26 @@ class hot_electron:
             if ax == None:
                 # Maxwellian at intiliased/background plasma temperature
                 MB = max_boltz_E(self.E_bins, self.epoch_data.Te*keV_to_K)
-                plt.plot(self.E_bins*J_tot_KeV, self.E_dist/self.E_dist.max(), label = 'Raw Data')
-                plt.plot(self.E_bins*J_tot_KeV, MB/MB.max(), label = 'MB', linestyle = '--', color = 'black')
+                plt.scatter(self.E_bins*J_tot_KeV, self.E_dist/self.E_dist.max(), label = f'Raw Data; I = {np.round(self.epoch_data.intensity*1e-15, 2)}' + r'$\times 10^{15} \,\, W/cm^2$ ', alpha = 0.6)
+                plt.plot(self.E_bins*J_tot_KeV, MB/MB.max(), label = r'$\phi_B (T = 4.5 \,\, keV)$', linestyle = '-', color = 'red')
                 plt.legend()
                 if log:
                     plt.yscale('log')
-                plt.xlabel(r'$E_e (keV)$')
-                plt.ylabel(r'$f_e(E)$')
-                plt.ylim(1e-4, 1e0)
+                plt.xlabel(r'$E (keV)$')
+                plt.ylabel(r'$E \cdot f(E)$')
+                plt.ylim(1e-3, 1.1e0)
                 plt.gcf().set_size_inches(10,6)
             else:
                 # Maxwellian at intiliased/background plasma temperature
                 MB = max_boltz_E(self.E_bins, self.epoch_data.Te*keV_to_K)
-                ax.plot(self.E_bins*J_tot_KeV, self.E_dist/self.E_dist.max(), label = 'Raw Data')
-                ax.plot(self.E_bins*J_tot_KeV, MB/MB.max(), label = 'MB', linestyle = '--', color = 'black')
+                ax.scatter(self.E_bins*J_tot_KeV, self.E_dist/self.E_dist.max(), label = f'Raw Data; I = {np.round(self.epoch_data.intensity*1e-15, 2)}' + r'$\times 10^{15} \,\, W/cm^2$ ', alpha = 0.6)
+                ax.plot(self.E_bins*J_tot_KeV, MB/MB.max(), label = r'$\phi_B (T = 4.5 \,\, keV)$', linestyle = '-', color = 'red')
                 ax.legend()
                 if log:
                     ax.set_yscale('log')
-                ax.set_xlabel(r'$E_e (keV)$')
-                ax.set_ylabel(r'$f_e(E)$')
-                ax.set_ylim(1e-4, 1e0)
+                ax.set_xlabel(r'$E (keV)$')
+                ax.set_ylabel(r'$E \cdot f(E)$')
+                ax.set_ylim(1e-3, 1.1e0)
             return None
         else:
             return self.E_bins, self.E_dist
@@ -163,7 +163,7 @@ class hot_electron:
                     plt.plot(e*J_tot_KeV, f)
                 if log:
                     plt.yscale('log')
-                plt.xlabel(r'$E_e (keV)$')
+                plt.xlabel(r'$E (keV)$')
                 plt.ylabel(r'$\phi_h(E)$')
                 plt.gcf().set_size_inches(10,6)
             else:
@@ -171,7 +171,7 @@ class hot_electron:
                     ax.plot(e*J_tot_KeV, f)
                 if log:
                     ax.set_yscale('log')
-                ax.set_xlabel(r'$E_e (keV)$')
+                ax.set_xlabel(r'$E (keV)$')
                 ax.set_ylabel(r'$\phi_h(E)$')
             return None
         else:
@@ -298,7 +298,7 @@ class hot_electron:
             if ax == None:
                 plt.plot(nfits, T_data, '-o', label = 'Data')
                 plt.xlabel(r'$N$ Fits')
-                plt.ylabel(r'$T_{hot}$ (keV')
+                plt.ylabel(r'$T_{hot}$ (keV)')
                 plt.xlim(1, n)
                 plt.axhline(self.T_hot_av, color ='red', ls = '--', label = 'Average')
                 plt.gcf().set_size_inches(8,6)

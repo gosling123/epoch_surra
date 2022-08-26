@@ -13,7 +13,7 @@ end:constant
 
 begin:control
   smooth_currents = T
-  nx = 6473.0
+  nx = 6500
   use_random_seed = T
   t_end = 2 * pico
   x_min = 0
