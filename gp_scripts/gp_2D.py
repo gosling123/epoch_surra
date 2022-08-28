@@ -4,12 +4,14 @@ from scipy.ndimage import gaussian_filter
 class LPI_GP_2D:
     """Class implementing a Gaussian Process"""
     
-    def __init__(self, input_file = None, output_type = None, output_file = None, var_file = None):
+    def __init__(self, input_file = None, output_type = None,\
+                 output_file = None, var_file = None, train_frac = 0.4):
         
         self.input_file = input_file
         self.output_file = output_file
         self.var_file = var_file
         self.output_type = output_type
+        self.train_frac = train_frac
 
     def get_input(self):
         os.path.exists(self.input_file)
@@ -66,66 +68,62 @@ class LPI_GP_2D:
             print('ERROR: Please set output type to either P, T or E (str)')
             return None
         return output
-    
-    def scale_input(self, X = None, rescale = False):
-        input = self.get_input()
-        I = input[:,0]
-        Ln = input[:,1]
-        if X is not None:
-            n = len(X)
-            I_scaled = scale_axis(X[:,0], I, rescale=rescale)
-            Ln_scaled = scale_axis(X[:,1], Ln, rescale=rescale)
-            res = []   
-            for i in range(n): 
-                res.append([I_scaled[i], Ln_scaled[i]])
-            return np.array(res)
-        else:
-            n = input.shape[0]
-            I_scaled = scale_axis(I, I, rescale=rescale)
-            Ln_scaled = scale_axis(Ln, Ln, rescale=rescale)
-            res = []   
-            for i in range(n): 
-                res.append([I_scaled[i], Ln_scaled[i]])
-            return np.array(res)
-    
-    def scale_output_var(self, Y = None, rescale = False):
-        output_var = self.get_noise_var()
-        if Y is not None:
-            res = scale_axis(Y, output_var, rescale = rescale)
-            return res
-        else:
-            res = scale_axis(output_var, output_var, rescale = rescale)
-            return res
-    
-    def scale_output(self, Y = None, rescale = False):
-        output = self.get_output()
-        if Y is not None:
-            res = scale_axis(Y, output, rescale = rescale)
-            return res
-        else:
-            res = scale_axis(output, output, rescale = rescale)
-            return res
-    
-    def set_noise_training_data(self):
-        self.X_train_noise = self.scale_input()
-        self.Y_train_noise = self.scale_output_var()[:,None]
+
+    def set_training_data(self):
+        X = self.get_input()
+        Y = self.get_output()
+        noise = self.get_noise_var()
+
+        X_train, X_test, Y_train, Y_test = train_test_split(X,Y,test_size = self.train_frac)
+
+        idxs_train = []
+        idxs_test = []
+        for i in range(len(X_train)):
+            mask = np.isin(X, X_train[i])
+            mask = mask[:,0] & mask[:,1]
+            indx = np.where(mask == True)[0][0]
+            idxs_train.append(indx)
+        for i in range(len(X_test)):
+            mask = np.isin(X, X_test[i])
+            mask = mask[:,0] & mask[:,1]
+            idx = np.where(mask == True)[0][0]
+            idxs_test.append(idx)
+
+        noise_train = noise[idxs_train]
+        noise_test = noise[idxs_test]
+
+        self.X_train = X_train
+        self.Y_train = Y_train[:,None]
+        self.noise_train = noise_train
+        self.X_test = X_test
+        self.Y_test = Y_test[:,None]
+        self.noise_test = noise_test
+
+        self.X1_range = X[:,0].max()-X[:,0].min()
+        self.X2_range = X[:,1].max()-X[:,1].min()
+        self.Y_range = Y.max()-Y.min()
+        self.noise_range = noise.max() - noise.min()    
+
+
 
     def update_noise_GP_kern(self, l1, l2, var):
+        l1 *= self.X1_range
+        l2 *= self.X2_range
+        var *= self.Y_range**2
         self.kern_noise = GPy.kern.Exponential(input_dim=2, variance=var, lengthscale=[l1, l2], ARD=True)
-        self.K_noise = self.kern_noise.K(self.X_train_noise, self.X_train_noise)
+        self.K_noise = self.kern_noise.K(self.X_train, self.X_train)
 
-    def update_noise_GP_weights(self, var_noise = 1e-6):
-        self.L_noise = np.linalg.cholesky(self.K_noise + var_noise * np.eye(len(self.X_train_noise)))
-        self.weights_noise = np.linalg.solve(self.L_noise.T, np.linalg.solve(self.L_noise, self.Y_train_noise))
+    def update_noise_GP_weights(self, var_noise = 1e-4):
+        self.L_noise = np.linalg.cholesky(self.K_noise + var_noise * self.noise_range**2 * np.eye(len(self.X_train)))
+        self.weights_noise = np.linalg.solve(self.L_noise.T, np.linalg.solve(self.L_noise, self.noise_train))
     
     def update_noise_gp(self, l1, l2, var):
-        self.set_noise_training_data()
         self.update_noise_GP_kern(l1, l2, var)
         self.update_noise_GP_weights()
 
     def get_noise_likelihood(self):
         
-        y = self.Y_train_noise
+        y = self.noise_train
         w = self.weights_noise
         K = self.K_noise
         K = np.array(K)
@@ -142,9 +140,9 @@ class LPI_GP_2D:
 
 
     def optimise_noise_GP(self):
-        ells_1 = np.geomspace(1e-5, 2.0, 10)
-        ells_2 = np.geomspace(1e-5, 2.0, 10)
-        vars = np.geomspace(1e-5, 2.0, 10)
+        ells_1 = np.geomspace(1e-5, 1.0, 10)
+        ells_2 = np.geomspace(1e-5, 1.0, 10)
+        vars = np.geomspace(1e-5, 1.0, 10)
         self.log_L_noise = np.zeros((len(ells_1), len(ells_2) , len(vars)))
         for i, l1 in enumerate(ells_1):
             for j, l2 in enumerate(ells_2):
@@ -159,30 +157,27 @@ class LPI_GP_2D:
         print('l1 = ' , self.l1_opt_noise, 'l2 = ' , self.l2_opt_noise, 'var = ' , self.var_opt_noise)
         self.update_noise_gp(l1 = self.l1_opt_noise, l2 = self.l2_opt_noise, var = self.var_opt_noise)
 
-    def noise_GP_predict(self, X_star):
-
-        X_star = self.scale_input(X = X_star)
-
-        k_star_noise = self.kern_noise.K(self.X_train_noise, X_star)
-
+    def noise_GP_predict(self, X_star, get_err = False):
+        K_star_noise = self.kern_noise.K(X_star, X_star)
+        k_star_noise = self.kern_noise.K(self.X_train, X_star)
         f_star_noise = np.dot(k_star_noise.T, self.weights_noise)
-        f_star_noise = self.scale_output_var(Y = f_star_noise, rescale = True)
+        f_star_noise = np.exp(f_star_noise)
+        if get_err:
+            v_noise = np.linalg.solve(self.L_noise, k_star_noise)
+            V_star_noise = K_star_noise - np.dot(v_noise.T, v_noise)
+            V_noise = f_star_noise**2 * np.diag(V_star_noise)
+            err = 2.0*np.sqrt(V_noise)
+            return f_star_noise.flatten(), err.flatten()
+        else:
+            return f_star_noise.flatten()
 
-        return np.exp(f_star_noise)
 
-    
-    def set_training_data(self):
-        self.X_train = self.get_input()
-        self.Y_train = self.get_output()[:,None]
-        self.X1_range = self.X_train[:,0].max()-self.X_train[:,0].min()
-        self.X2_range = self.X_train[:,1].max()-self.X_train[:,1].min()
-        self.Y_range = self.Y_train.max()-self.Y_train.min()
 
     def update_GP_kern(self, l1, l2, var):
         l1 *= self.X1_range
         l2 *= self.X2_range
         var *= self.Y_range**2
-        self.noise_var = self.get_noise_var(log = False).flatten()
+        self.noise_var = self.noise_GP_predict(X_star=self.X_train)
         self.noise_cov = np.diag(self.noise_var)
 
         self.kern = GPy.kern.Exponential(input_dim=2, variance=var, lengthscale=[l1, l2], ARD=True)
@@ -194,7 +189,6 @@ class LPI_GP_2D:
         self.weights = np.linalg.solve(self.L.T, np.linalg.solve(self.L, self.Y_train))
 
     def update_GP(self, l1, l2, var):
-        self.set_training_data()
         self.update_GP_kern(l1, l2, var)
         self.update_GP_weights()
 
@@ -234,7 +228,8 @@ class LPI_GP_2D:
         print('l1 = ', ells_1[idx[0][0]], 'l2 = ', ells_2[idx[1][0]], 'var = ', vars[idx[2][0]])
         self.update_GP(l1 = self.l1_opt, l2 = self.l2_opt, var = self.var_opt)
     
-    def GP_predict(self, X_star, get_std = False):
+    def GP_predict(self, X_star, get_var = False):
+        X_star = np.log(X_star)
         K_star = self.kern.K(X_star, X_star)
         k_star = self.kern.K(self.X_train, X_star)
 
@@ -242,26 +237,24 @@ class LPI_GP_2D:
         self.noise_cov_star = np.diag(self.noise_var_star.flatten())
 
         f_star = np.dot(k_star.T, self.weights)
-        if get_std:
+        if get_var:
             v = np.linalg.solve(self.L, k_star)
             V_star_epi = K_star - np.dot(v.T, v)
             V_star_noise = self.noise_cov_star
             if self.output_type == 'T':
-                std_epi  = np.sqrt(np.diag(V_star_epi))
-                std_noise  = np.sqrt(np.diag(V_star_noise))
-                std_noise = gaussian_filter(std_noise, sigma = 10)
-                err = 2.0*(std_epi + std_noise)
-                return f_star.flatten(), err.flatten()
+                V_epi  = np.sqrt(np.diag(V_star_epi))
+                V_noise  = np.sqrt(np.diag(V_star_noise))
+                # V_noise = gaussian_filter(V_noise, sigma = 5)
+                return f_star.flatten(), V_epi.flatten(), V_noise.flatten()
             else:
                 f_star = np.exp(f_star.flatten())
                 V_epi = f_star**2 * np.diag(V_star_epi)
-                std_epi = np.sqrt(V_epi)
 
                 V_noise = f_star**2 * np.diag(V_star_noise)
-                std_noise = np.sqrt(V_noise)
 
-                err = 2.0*(std_epi)
-                return f_star.flatten(), err.flatten()
+                # V_noise = gaussian_filter(V_noise, sigma = 20)
+
+                return f_star.flatten(), V_epi.flatten(), V_noise.flatten()
         else:
             if self.output_type == 'T':
                 return f_star.flatten()
