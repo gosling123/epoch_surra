@@ -7,30 +7,43 @@ from sim_setup import *
 ## run_epoch
 #
 # Runs epoch1d simulations for set intensity 
-# @param I  Intensity of laser (W/cm^2)
-# @param Ln  Density scale length (m)
-# @param ppc  Particles per cell
 # @param dir  Directory to store epoch data to and where the input.deck file is
-# @param input_file  Input file name in the input_decks directory
 # @param output  Ouput to command line (True) or to run.log file (False)
-# @param np  Number of processors to eun epoch1d on (MPI)    
-def run_epoch(I, Ln, ppc, dir = 'Data', input_file = 'input_0.15nc_mid.deck', output = False, npro = 4):
-    if not isinstance(ppc,int) or (ppc < 1):
-            raise Exception("ERROR: ppc argument must be an integer > 0")
+# @param npro  Number of processors to eun epoch1d on (MPI)    
+def run_epoch(dir = 'Data', output = False, npro = 4):
     if not isinstance(npro,int) or (npro < 1):
             raise Exception("ERROR: npro argument must be an integer > 0")
     if not isinstance(dir,str):
             raise Exception("ERROR: dir argument must be a string (directory)")
-    if not isinstance(input_file,str):
-            raise Exception("ERROR: input_file argument must be a string (.deck file)")
     epoch_path = os.getenv('EPOCH_SURRA')
-    create_dir(dir)
-    input_deck(I, Ln, ppc, dir, input_file)
+    
+    path = f'{epoch_path}/{dir}'
+    dir_exist = os.path.exists(path)
+
+    if dir_exist == False:
+        print(f'ERROR: Directory {dir} does not exist or is not in epoch_surra.')
+        print(f'Please ensure the epoch_surra path is added to your .bashrc as EPOCH_SURRA and that the directory {dir} is within the epoch_surra directory.')
+        return None
+    
+    input_path = f'{path}/input.deck'
+    input_exist = os.path.exists(input_path)
+
+    if input_exist == False:
+        print(f'ERROR: Input file not in {dir}.')
+        print(f'Please ensure an input file is conatined within {dir} and named input.deck')
+        return None
+
+    I = read_input(f'{dir}/', param = 'intensity')
+    Ln = read_input(f'{dir}/', param = 'ne_scale_len')
+    ppc = read_input(f'{dir}/', param = 'ppc')
+    print(f'Output Directory exists at {dir}')
+    print(f'running epoch1d for I = {I} W/cm^2 ; Ln = {Ln} m ; PPC = {ppc}')
+    start = time.time()
     if output:
         os.system(f'{epoch_path}/epoch.sh ' + str(dir) + ' ' + str(npro) + ' log')
     else:
         os.system(f'{epoch_path}/epoch.sh ' + str(dir) + ' ' + str(npro))
-
+    print(f'Simulation Complete in {(time.time() - start)/60} minutes')
         
         
 

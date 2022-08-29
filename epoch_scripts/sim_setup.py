@@ -42,25 +42,25 @@ def create_sub_dir(dir, sub_dir):
 # @param ppc  Paricles per cell
 # @param dir  Directory name
 # @param input_file  Input file base to copy from input_decks folder
-def input_deck(I, Ln, ppc, dir, input_file = 'input_0.15nc_mid.deck'):
+def input_deck(I, Ln, ppc, dir, input_file = 'input_decks/input_0.15nc_mid.deck'):
     if not isinstance(ppc,int) or (ppc < 1):
             raise Exception("ERROR: ppc argument must be an integer > 0")
     if not isinstance(dir,str):
             raise Exception("ERROR: dir argument must be a string (directory)")
     if not isinstance(input_file,str):
             raise Exception("ERROR: input_file argument must be a string (.deck file)")
+    epoch_path = os.getenv('EPOCH_SURRA')    
     try:
         os.system(f'{epoch_path}/{dir}/touch input.deck')
     except:
         print(f'$EPOCH_SURRA/{dir}/input.deck already exists')
     try:
-        epoch_path = os.getenv('EPOCH_SURRA')
-        os.system(f'cp {epoch_path}/input_decks/{input_file} {epoch_path}/{dir}/input.deck')
+        os.system(f'cp {epoch_path}/{input_file} {epoch_path}/{dir}/input.deck')
     except:
         return print('ERROR: Ensure the input_file name is correct as in the input_decks directory')
-    replace_line('intensity_w_cm2 =', f'intensity_w_cm2 = {I}', fname = str(dir)+'/input.deck')
-    replace_line('Ln =', f'Ln = {Ln}', fname = str(dir)+'/input.deck')
-    replace_line('PPC =', f'PPC = {ppc}', fname = str(dir)+'/input.deck')
+    replace_line('intensity_w_cm2 =', f'intensity_w_cm2 = {I}', fname = f'{epoch_path}/{dir}/input.deck')
+    replace_line('Ln =', f'Ln = {Ln}', fname = f'{epoch_path}/{dir}/input.deck')
+    replace_line('PPC =', f'PPC = {ppc}', fname = f'{epoch_path}/{dir}/input.deck')
 
 ## avon
 #
@@ -107,24 +107,17 @@ def avon(dir, fname = 'epoch.sbatch', time = '2:00:00',nodes = 1):
 # @param time  Time string in the form of hours:minutes:seconds (hh:mm:ss)
 # @param nodes  Number of computational nodes to request
 # @param hpc  (Logical) Whether to add hpc (avon) hob script or not
-def epoch_sim_dir(dir, input_file, I, Ln, ppc = 100, time = '2:00:00', nodes = 1, hpc = True):
+def epoch_sim_dir(dir, input_file, I, Ln, ppc = 100):
     if not isinstance(ppc,int) or (ppc < 1):
             raise Exception("ERROR: ppc argument must be an integer > 0")
     if not isinstance(dir,str):
             raise Exception("ERROR: dir argument must be a string (directory)")
     if not isinstance(input_file,str):
             raise Exception("ERROR: input_file argument must be a string (.deck file)")
-    if not isinstance(time,str):
-            raise Exception("ERROR: time argument must be a string in the form of hours:minutes:seconds (hh:mm:ss)")
-    if not isinstance(nodes,int) or (nodes < 1):
-            raise Exception("ERROR: nodes argument must be an integer > 0")
     create_dir(dir)
     input_deck(I, Ln, ppc, dir, input_file)
-    if  hpc:
-        avon(dir, time, nodes)
-        return print('created directory, input.deck and epoch.sbatch in $EPOCH_SURRA')
-    else:
-        return print('created directory and input.deck in $EPOCH_SURR')
+        
+    return print('created directory and input.deck in $EPOCH_SURRA')
 
 ## epoch_sim_sub_dirs
 #
@@ -228,7 +221,7 @@ def run_all_sub_dirs(dir, sub_dirs, time = '2:00:00', nodes = 1):
 # @param input_file  Input file base to copy from input_decks folder
 # @param time  Time string in the form of hours:minutes:seconds (hh:mm:ss)
 # @param nodes  Number of computational nodes to request
-def hpc_run(dir, sub_dirs, I_array, Ln_array, ppc = 2048, input_file = 'input_0.15nc_mid.deck', time = '2:00:00', nodes = 1):
+def hpc_run(dir, sub_dirs, I_array, Ln_array, ppc = 2048, input_file = 'input_decks/input_0.15nc_mid.deck', time = '2:00:00', nodes = 1):
         if not isinstance(ppc,int) or (ppc < 1):
                 raise Exception("ERROR: ppc argument must be an integer > 0")
         if not isinstance(dir,str):

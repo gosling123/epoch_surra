@@ -39,7 +39,7 @@ class LPI_GP_2D:
                 noise_var[i] = train_outputs[i][1]
         elif self.output_type == 'E':
             for i in range(n):
-                noise_var[i] = train_outputs[i][2] + 1e-12
+                noise_var[i] = train_outputs[i][2] 
         else:
             print('ERROR: Please set output type to either P, T or E (str)')
             return None
@@ -63,7 +63,7 @@ class LPI_GP_2D:
                 output[i] = train_outputs[i][1]
         elif self.output_type == 'E':
             for i in range(n):
-                output[i] = train_outputs[i][2] + 1e-6
+                output[i] = train_outputs[i][2]
         else:
             print('ERROR: Please set output type to either P, T or E (str)')
             return None
@@ -140,9 +140,9 @@ class LPI_GP_2D:
 
 
     def optimise_noise_GP(self):
-        ells_1 = np.geomspace(1e-5, 1.0, 10)
-        ells_2 = np.geomspace(1e-5, 1.0, 10)
-        vars = np.geomspace(1e-5, 1.0, 10)
+        ells_1 = np.geomspace(1e-4, 10.0, 10)
+        ells_2 = np.geomspace(1e-4, 10.0, 10)
+        vars = np.geomspace(1e-4, 10.0, 10)
         self.log_L_noise = np.zeros((len(ells_1), len(ells_2) , len(vars)))
         for i, l1 in enumerate(ells_1):
             for j, l2 in enumerate(ells_2):
@@ -180,7 +180,7 @@ class LPI_GP_2D:
         self.noise_var = self.noise_GP_predict(X_star=self.X_train)
         self.noise_cov = np.diag(self.noise_var)
 
-        self.kern = GPy.kern.Exponential(input_dim=2, variance=var, lengthscale=[l1, l2], ARD=True)
+        self.kern = GPy.kern.Matern52(input_dim=2, variance=var, lengthscale=[l1, l2], ARD=True)
         self.K = self.kern.K(self.X_train, self.X_train)
         self.K += self.noise_cov
 
@@ -211,9 +211,9 @@ class LPI_GP_2D:
 
    
     def optimise_GP(self):
-        ells_1 = np.geomspace(0.01, 100, 10)
-        ells_2 = np.geomspace(0.01, 100, 10)
-        vars = np.geomspace(0.01, 5, 10)
+        ells_1 = np.geomspace(0.1, 10, 10)
+        ells_2 = np.geomspace(0.1, 10, 10)
+        vars = np.geomspace(0.1, 10, 10)
         self.log_L = np.zeros((len(ells_1), len(ells_2), len(vars)))
         for i, l1 in enumerate(ells_1):
             for j, l2 in enumerate(ells_2):
@@ -244,16 +244,11 @@ class LPI_GP_2D:
             if self.output_type == 'T':
                 V_epi  = np.sqrt(np.diag(V_star_epi))
                 V_noise  = np.sqrt(np.diag(V_star_noise))
-                # V_noise = gaussian_filter(V_noise, sigma = 5)
                 return f_star.flatten(), V_epi.flatten(), V_noise.flatten()
             else:
                 f_star = np.exp(f_star.flatten())
                 V_epi = f_star**2 * np.diag(V_star_epi)
-
                 V_noise = f_star**2 * np.diag(V_star_noise)
-
-                # V_noise = gaussian_filter(V_noise, sigma = 20)
-
                 return f_star.flatten(), V_epi.flatten(), V_noise.flatten()
         else:
             if self.output_type == 'T':
