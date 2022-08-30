@@ -173,7 +173,7 @@ class LPI_GP_1D:
         var *= self.Y_range
         self.noise_var = self.noise_GP_predict(X_star=self.X_train)
         self.noise_cov = np.diag(self.noise_var)
-        self.kern = GPy.kern.RBF(input_dim=1, variance=var, lengthscale=l)
+        self.kern = GPy.kern.Exponential(input_dim=1, variance=var, lengthscale=l)
         self.K = self.kern.K(self.X_train, self.X_train)
         self.K += self.noise_cov
 

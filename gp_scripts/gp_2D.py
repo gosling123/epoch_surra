@@ -62,6 +62,8 @@ class LPI_GP_2D:
             for i in range(n):
                 output[i] = train_outputs[i][1]
         elif self.output_type == 'E':
+            inputs = self.get_input()
+            I = inputs[:,0]
             for i in range(n):
                 output[i] = train_outputs[i][2]
         else:
@@ -141,8 +143,8 @@ class LPI_GP_2D:
 
     def optimise_noise_GP(self):
         ells_1 = np.geomspace(1e-4, 10.0, 10)
-        ells_2 = np.geomspace(1e-4, 10.0, 10)
-        vars = np.geomspace(1e-4, 10.0, 10)
+        ells_2 = np.geomspace(1e-4, 100.0, 10)
+        vars = np.geomspace(1e-4, 100.0, 10)
         self.log_L_noise = np.zeros((len(ells_1), len(ells_2) , len(vars)))
         for i, l1 in enumerate(ells_1):
             for j, l2 in enumerate(ells_2):
@@ -179,8 +181,10 @@ class LPI_GP_2D:
         var *= self.Y_range**2
         self.noise_var = self.noise_GP_predict(X_star=self.X_train)
         self.noise_cov = np.diag(self.noise_var)
-
-        self.kern = GPy.kern.Matern52(input_dim=2, variance=var, lengthscale=[l1, l2], ARD=True)
+        if self.output_type == 'E':
+            self.kern = GPy.kern.Exponential(input_dim=2, variance=var, lengthscale=[l1, l2], ARD=True)
+        else:
+            self.kern = GPy.kern.Exponential(input_dim=2, variance=var, lengthscale=[l1, l2], ARD=True)
         self.K = self.kern.K(self.X_train, self.X_train)
         self.K += self.noise_cov
 
@@ -211,9 +215,9 @@ class LPI_GP_2D:
 
    
     def optimise_GP(self):
-        ells_1 = np.geomspace(0.1, 10, 10)
-        ells_2 = np.geomspace(0.1, 10, 10)
-        vars = np.geomspace(0.1, 10, 10)
+        ells_1 = np.geomspace(1e-4, 100, 10)
+        ells_2 = np.geomspace(1e-4, 100, 10)
+        vars = np.geomspace(1e-4, 100, 10)
         self.log_L = np.zeros((len(ells_1), len(ells_2), len(vars)))
         for i, l1 in enumerate(ells_1):
             for j, l2 in enumerate(ells_2):
