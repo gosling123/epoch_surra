@@ -142,9 +142,9 @@ class LPI_GP_2D:
 
 
     def optimise_noise_GP(self):
-        ells_1 = np.geomspace(1e-4, 10.0, 10)
-        ells_2 = np.geomspace(1e-4, 100.0, 10)
-        vars = np.geomspace(1e-4, 100.0, 10)
+        ells_1 = np.geomspace(1e-4, 20.0, 10)
+        ells_2 = np.geomspace(1e-4, 20.0, 10)
+        vars = np.geomspace(1e-4, 20.0, 10)
         self.log_L_noise = np.zeros((len(ells_1), len(ells_2) , len(vars)))
         for i, l1 in enumerate(ells_1):
             for j, l2 in enumerate(ells_2):
@@ -215,9 +215,9 @@ class LPI_GP_2D:
 
    
     def optimise_GP(self):
-        ells_1 = np.geomspace(1e-4, 100, 10)
-        ells_2 = np.geomspace(1e-4, 100, 10)
-        vars = np.geomspace(1e-4, 100, 10)
+        ells_1 = np.geomspace(1e-1, 100, 20)
+        ells_2 = np.geomspace(1e-1, 100, 20)
+        vars = np.geomspace(1e-1, 10, 10)
         self.log_L = np.zeros((len(ells_1), len(ells_2), len(vars)))
         for i, l1 in enumerate(ells_1):
             for j, l2 in enumerate(ells_2):
@@ -227,7 +227,7 @@ class LPI_GP_2D:
 
         idx = np.where(self.log_L == np.array(self.log_L).min())
         self.l1_opt = ells_1[idx[0][0]]
-        self.l2_opt = vars[idx[1][0]]
+        self.l2_opt = ells_2[idx[1][0]]
         self.var_opt = vars[idx[2][0]]
         print('l1 = ', ells_1[idx[0][0]], 'l2 = ', ells_2[idx[1][0]], 'var = ', vars[idx[2][0]])
         self.update_GP(l1 = self.l1_opt, l2 = self.l2_opt, var = self.var_opt)
@@ -259,3 +259,69 @@ class LPI_GP_2D:
                 return f_star.flatten()
             else:
                 return np.exp(f_star).flatten()
+
+    def test_train_plot(self):
+
+        ### TARGET DATA
+        if self.output_type == 'T':
+            target_value = self.get_output()
+            Y_train = self.Y_train.flatten()
+            Y_test = self.Y_test.flatten()
+        else:
+            target_value = np.exp(self.get_output()).flatten()
+            Y_train = np.exp(self.Y_train).flatten()
+            Y_test = np.exp(self.Y_test).flatten()
+
+        y_train_predict, var_train_epi, var_train_noise = self.GP_predict(X_star=np.exp(self.X_train), get_var = True)
+        y_test_predict, var_test_epi, var_test_noise = self.GP_predict(X_star=np.exp(self.X_test), get_var = True)
+
+        ### DISTRIBUTION OF QUANTITY OF INTEREST
+        fig = plt.figure()
+        sns.kdeplot(target_value, label = 'Target Data', linestyle='dashdot', linewidth = 5, color = 'black')
+        sns.kdeplot(y_train_predict, label=f'Train', color = 'blue')
+        sns.kdeplot(y_test_predict, label=f'Train', color = 'orange')
+        plt.legend()
+        if self.output_type == 'P':
+            plt.xlabel(r'$\mathcal{P}$')
+        elif self.output_type == 'T':
+            plt.xlabel(r'$T_{hot} \,\, keV$')
+        elif self.output_type == 'E':
+            plt.xlabel(r'$\mathcal{E}$')
+        plt.show()
+
+        ### STANDARD DEVIATION  
+        S_ptrain = np.sqrt(var_train_epi+var_train_noise)
+        S_ptest = np.sqrt(var_test_epi+var_test_noise)
+
+        #### ax1/2 --- train
+        #### ax3/4 ---- test
+
+        ### PLOT CORRELATION BETWEEN VALUES AND ERRORS
+        fig, ((ax1, ax2)) = plt.subplots(1, 2)
+        ax1.scatter(Y_train, y_train_predict, label=f'Train', color = 'blue')
+        ax1.plot([target_value.min(), target_value.max()], [target_value.min(), target_value.max()], 'k:', label = 'Target')
+        ax1.set_xlabel('True Value')
+        ax1.set_ylabel('Predicted Value')
+
+
+        ax2.plot(abs(y_train_predict - Y_train), S_ptrain, 'o', label='Train', color = 'blue')
+        ax2.set_xlabel('True Error')
+        ax2.set_ylabel('Predicted Error')
+        ax2.plot([0, S_ptrain.max()], [0, S_ptrain.max()], 'k:', label = 'Target')
+
+
+        ax1.scatter(Y_test, y_test_predict, label=f'Test', color = 'orange')
+        ax1.legend()
+
+        ax2.plot(abs(y_test_predict - Y_test), S_ptest, 'o', label='Test', color='orange')
+        ax2.plot([0, S_ptest.max()], [0, S_ptest.max()], 'k:', label = 'Target')
+        ax2.legend()
+
+        plt.subplots_adjust(left=0.1,
+                            bottom=0.1, 
+                            right=0.9, 
+                            top=0.9, 
+                            wspace=0.5, 
+                            hspace=0.4)
+
+        plt.show()
