@@ -1,16 +1,13 @@
 from utils import *
 from scipy.ndimage import gaussian_filter
 
-class LPI_GP_1D:
+class LPI_GP_test:
     """Class implementing a Gaussian Process"""
     
-    def __init__(self, input_file = None, input_type = None, output_type = None,\
-                 output_file = None, var_file = None, train_frac = 0.4):
+    def __init__(self, input_file = None, output_file = None, var_file = None, train_frac = 0.4):
         
         self.input_file = input_file
-        self.input_type = input_type
         self.output_file = output_file
-        self.output_type = output_type
         self.var_file = var_file
         self.train_frac = train_frac
 
@@ -21,15 +18,8 @@ class LPI_GP_1D:
         train_inputs = np.array(train_inputs)
         n = train_inputs.shape[0]
         input = np.zeros(n)
-        if self.input_type == 'I':
-            for i in range(n):
-                input[i] = train_inputs[i][0]
-        elif self.input_type == 'Ln':
-            for i in range(n):
-                input[i] = train_inputs[i][1]
-        else:
-            print('ERROR: Please set input type to either I or Ln (str)')
-            return None
+        for i in range(n):
+            input[i] = train_inputs[i]
         return input
 
     def get_noise_var(self):
@@ -39,18 +29,8 @@ class LPI_GP_1D:
         train_outputs = np.array(train_outputs)
         n = train_outputs.shape[0]
         noise_var = np.zeros(n)
-        if self.output_type == 'P':
-            for i in range(n):
-                noise_var[i] = train_outputs[i][0]
-        elif self.output_type == 'T':
-            for i in range(n):
-                noise_var[i] = train_outputs[i][1]
-        elif self.output_type == 'E':
-            for i in range(n):
-                noise_var[i] = train_outputs[i][2]
-        else:
-            print('ERROR: Please set output type to either P, T or E (str)')
-            return None
+        for i in range(n):
+            noise_var[i] = train_outputs[i]
         return np.log(noise_var)
 
 
@@ -61,18 +41,8 @@ class LPI_GP_1D:
         train_outputs = np.array(train_outputs)
         n = train_outputs.shape[0]
         output = np.zeros(n)
-        if self.output_type == 'P':
-            for i in range(n):
-                output[i] = train_outputs[i][0]
-        elif self.output_type == 'T':
-            for i in range(n):
-                output[i] = train_outputs[i][1]
-        elif self.output_type == 'E':
-            for i in range(n):
-                output[i] = train_outputs[i][2]
-        else:
-            print('ERROR: Please set output type to either P, T or E (str)')
-            return None
+        for i in range(n):
+            output[i] = train_outputs[i]
         return output
     
     def set_training_data(self):
@@ -140,8 +110,8 @@ class LPI_GP_1D:
 
 
     def optimise_noise_GP(self):
-        ells = np.geomspace(0.1, 20, 50)
-        vars = np.geomspace(0.1, 20, 50)
+        ells = np.geomspace(0.1, 10, 100)
+        vars = np.geomspace(0.1, 10, 100)
         self.log_L_noise = np.zeros((len(ells), len(vars)))
         for i, l in enumerate(ells):
             for j, v in enumerate(vars):
@@ -204,8 +174,8 @@ class LPI_GP_1D:
 
    
     def optimise_GP(self):
-        ells = np.geomspace(0.05, 100, 20)
-        vars = np.geomspace(0.05, 100, 20)
+        ells = np.geomspace(0.1, 10, 100)
+        vars = np.geomspace(0.1, 10, 100)
         self.log_L = np.zeros((len(ells), len(vars)))
         for i, l in enumerate(ells):
             for j, v in enumerate(vars):
@@ -231,37 +201,21 @@ class LPI_GP_1D:
             v = np.linalg.solve(self.L, k_star)
             V_star_epi = K_star - np.dot(v.T, v)
             V_star_noise = self.noise_cov_star
-            if self.output_type == 'T':
-                V_epi  = np.sqrt(np.diag(V_star_epi))
-                V_noise  = np.sqrt(np.diag(V_star_noise))
-                V_noise = gaussian_filter(V_noise, sigma = 2)
-                return f_star.flatten(), V_epi.flatten(), V_noise.flatten()
-            else:
-                f_star = np.exp(f_star.flatten())
-                V_epi = f_star**2 * np.diag(V_star_epi)
+    
+            f_star = np.exp(f_star.flatten())
+            V_epi = f_star**2 * np.diag(V_star_epi)
+            V_noise = f_star**2 * np.diag(V_star_noise)
+            # V_noise = gaussian_filter(V_noise, sigma = 20)
 
-                V_noise = f_star**2 * np.diag(V_star_noise)
-
-                V_noise = gaussian_filter(V_noise, sigma = 2)
-
-                return f_star.flatten(), V_epi.flatten(), V_noise.flatten()
+            return f_star.flatten(), V_epi.flatten(), V_noise.flatten()
         else:
-            if self.output_type == 'T':
-                return f_star.flatten()
-            else:
-                return np.exp(f_star).flatten()
+            return np.exp(f_star).flatten()
 
     def test_train_plot(self):
 
-        ### TARGET DATA
-        if self.output_type == 'T':
-            target_value = self.get_output()
-            Y_train = self.Y_train.flatten()
-            Y_test = self.Y_test.flatten()
-        else:
-            target_value = np.exp(self.get_output()).flatten()
-            Y_train = np.exp(self.Y_train).flatten()
-            Y_test = np.exp(self.Y_test).flatten()
+        target_value = np.exp(self.get_output()).flatten()
+        Y_train = np.exp(self.Y_train).flatten()
+        Y_test = np.exp(self.Y_test).flatten()
 
         y_train_predict, var_train_epi, var_train_noise = self.GP_predict(X_star=np.exp(self.X_train), get_var = True)
         y_test_predict, var_test_epi, var_test_noise = self.GP_predict(X_star=np.exp(self.X_test), get_var = True)
@@ -282,26 +236,12 @@ class LPI_GP_1D:
         ax3 = sns.kdeplot(y_train_predict, label=f'Train', color = 'blue')
         ax3 = sns.kdeplot(y_test_predict, label=f'Test', color = 'orange')
         # ax3.legend()
-        if self.output_type == 'P':
-            ax3.set_xlabel(r'$\mathcal{P}$')
-        elif self.output_type == 'T':
-            ax3.set_xlabel(r'$T_{hot} \,\, keV$')
-        elif self.output_type == 'E':
-            ax3.set_xlabel(r'$\mathcal{E}$')
+        ax3.set_xlabel(r'$\mathcal{P}$')
 
         ax1.scatter(Y_train, y_train_predict, label=f'Train (RSME = {np.round(rmse_train, 3)})', color = 'blue')
         ax1.plot([target_value.min(), target_value.max()], [target_value.min(), target_value.max()], 'k:', label = 'Target')
-
-        if self.output_type == 'P':
-            ax1.set_xlabel(r'True Value - $\mathcal{P}$')
-            ax1.set_ylabel(r'Predicted Value - $\mathcal{P}$')
-        elif self.output_type == 'T':
-            ax1.set_xlabel(r'True Value - $T_{hot} \,\, keV$')
-            ax1.set_ylabel(r'Predicted Value - $T_{hot} \,\, keV$')
-        elif self.output_type == 'E':
-            ax1.set_xlabel(r'True Value - $\mathcal{E}$')
-            ax1.set_ylabel(r'Predicted Value - $\mathcal{E}$')
-
+        ax1.set_xlabel(r'True Value - $\mathcal{P}$')
+        ax1.set_ylabel(r'Predicted Value - $\mathcal{P}$')
 
 
         ax2.plot(abs(y_train_predict - Y_train), S_ptrain, 'o', label='Train', color = 'blue')
@@ -314,15 +254,8 @@ class LPI_GP_1D:
         ax2.plot(abs(y_test_predict - Y_test), S_ptest, 'o', label='Test', color='orange')
         ax2.plot([0, S_ptest.max()], [0, S_ptest.max()], 'k:', label = 'Target')
         # ax2.legend()
-        if self.output_type == 'P':
-            ax2.set_xlabel(r'True Error - $\mathcal{P}$')
-            ax2.set_ylabel(r'Predicted Error - $\mathcal{P}$')
-        elif self.output_type == 'T':
-            ax2.set_xlabel(r'True Error - $T_{hot} \,\, keV$')
-            ax2.set_ylabel(r'Predicted Error - $T_{hot} \,\, keV$')
-        elif self.output_type == 'E':
-            ax2.set_xlabel(r'True Error - $\mathcal{E}$')
-            ax2.set_ylabel(r'Predicted Error - $\mathcal{E}$')
+        ax2.set_xlabel(r'True Error - $\mathcal{P}$')
+        ax2.set_ylabel(r'Predicted Error - $\mathcal{P}$')
 
         plt.subplots_adjust(left=0.1,
                             bottom=0.1, 
@@ -332,33 +265,3 @@ class LPI_GP_1D:
                             hspace=0.4)
 
         plt.show()
-
-def GP_1D_predict_all(X_star, input_file, input_type, output_file,\
-                      var_file, fname = 'data_dict.pickle', save = False):
-    output_types = ['P', 'T', 'E']
-    label = ['Reflectivity', 'Hot Electron Temperature', 'Fraction E>50 keV']
-    data_dict = {'input' : X_star.flatten(), 'output' : {}, 'error_epi' : {}, 'error_noise' : {}}
-    start = time.time()
-    for i, out in enumerate(output_types):
-        t1 = time.time()
-        print(f'Generating output = {label[i]} GP')
-        gp = LPI_GP_1D(input_file = input_file, input_type = input_type,\
-                            output_file = output_file, output_type = out,\
-                             var_file = var_file)
-        print('Optimiszing Noise GP')
-        gp.optimise_noise_GP()
-        print('Optimiszing Output GP')
-        gp.optimise_GP()
-        print('Making predictions for X_star')
-        Y_star, sig_epi, sig_noise = gp.GP_predict(X_star, get_std=True)
-        data_dict['output'][label[i]] = Y_star.flatten()
-        data_dict['error_epi'][label[i]] = 2.0*sig_epi.flatten()
-        data_dict['error_noise'][label[i]] = 2.0*sig_noise.flatten()
-        print(f'Finished {out} GP regression in {(time.time() - t1)/60} minutes')
-        print('--------------------------------------------------------------------')
-    print(f'All ouput GP predictions completed in {(time.time() - start)/60} minutes')
-    if save:
-        with open(fname, 'wb') as f:
-            pickle.dump(data_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
-        print(f'Saved GP result dictioanry to {fname}')
-    return data_dict

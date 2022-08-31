@@ -351,7 +351,7 @@ class hot_electron:
         E, f = self.get_flux_dist()
         idx1 = np.where(bounds[0] <= E*J_tot_KeV)[0]
         if len(idx1) == 0:
-            return 0.0
+            return np.random.random(1)[0]*1e-10
         else:
             idx1 = idx1[0]
         idx2 = np.where(E*J_tot_KeV <= bounds[1])[0][-1]

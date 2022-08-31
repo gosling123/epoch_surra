@@ -274,20 +274,9 @@ class LPI_GP_2D:
 
         y_train_predict, var_train_epi, var_train_noise = self.GP_predict(X_star=np.exp(self.X_train), get_var = True)
         y_test_predict, var_test_epi, var_test_noise = self.GP_predict(X_star=np.exp(self.X_test), get_var = True)
-
-        ### DISTRIBUTION OF QUANTITY OF INTEREST
-        fig = plt.figure()
-        sns.kdeplot(target_value, label = 'Target Data', linestyle='dashdot', linewidth = 5, color = 'black')
-        sns.kdeplot(y_train_predict, label=f'Train', color = 'blue')
-        sns.kdeplot(y_test_predict, label=f'Train', color = 'orange')
-        plt.legend()
-        if self.output_type == 'P':
-            plt.xlabel(r'$\mathcal{P}$')
-        elif self.output_type == 'T':
-            plt.xlabel(r'$T_{hot} \,\, keV$')
-        elif self.output_type == 'E':
-            plt.xlabel(r'$\mathcal{E}$')
-        plt.show()
+        
+        rmse_train = np.sqrt(np.mean((Y_train-y_train_predict)**2))
+        rmse_test = np.sqrt(np.mean((Y_test-y_test_predict)**2)) 
 
         ### STANDARD DEVIATION  
         S_ptrain = np.sqrt(var_train_epi+var_train_noise)
@@ -297,25 +286,52 @@ class LPI_GP_2D:
         #### ax3/4 ---- test
 
         ### PLOT CORRELATION BETWEEN VALUES AND ERRORS
-        fig, ((ax1, ax2)) = plt.subplots(1, 2)
-        ax1.scatter(Y_train, y_train_predict, label=f'Train', color = 'blue')
+        fig, ((ax1, ax2, ax3)) = plt.subplots(1, 3)
+        ax3 = sns.kdeplot(target_value, label = 'Target Data', linestyle='dashdot', linewidth = 5, color = 'black')
+        ax3 = sns.kdeplot(y_train_predict, label=f'Train', color = 'blue')
+        ax3 = sns.kdeplot(y_test_predict, label=f'Test', color = 'orange')
+        # ax3.legend()
+        if self.output_type == 'P':
+            ax3.set_xlabel(r'$\mathcal{P}$')
+        elif self.output_type == 'T':
+            ax3.set_xlabel(r'$T_{hot} \,\, keV$')
+        elif self.output_type == 'E':
+            ax3.set_xlabel(r'$\mathcal{E}$')
+
+        ax1.scatter(Y_train, y_train_predict, label=f'Train (RSME = {np.round(rmse_train, 3)})', color = 'blue')
         ax1.plot([target_value.min(), target_value.max()], [target_value.min(), target_value.max()], 'k:', label = 'Target')
-        ax1.set_xlabel('True Value')
-        ax1.set_ylabel('Predicted Value')
+
+        if self.output_type == 'P':
+            ax1.set_xlabel(r'True Value - $\mathcal{P}$')
+            ax1.set_ylabel(r'Predicted Value - $\mathcal{P}$')
+        elif self.output_type == 'T':
+            ax1.set_xlabel(r'True Value - $T_{hot} \,\, keV$')
+            ax1.set_ylabel(r'Predicted Value - $T_{hot} \,\, keV$')
+        elif self.output_type == 'E':
+            ax1.set_xlabel(r'True Value - $\mathcal{E}$')
+            ax1.set_ylabel(r'Predicted Value - $\mathcal{E}$')
+
 
 
         ax2.plot(abs(y_train_predict - Y_train), S_ptrain, 'o', label='Train', color = 'blue')
-        ax2.set_xlabel('True Error')
-        ax2.set_ylabel('Predicted Error')
         ax2.plot([0, S_ptrain.max()], [0, S_ptrain.max()], 'k:', label = 'Target')
 
 
-        ax1.scatter(Y_test, y_test_predict, label=f'Test', color = 'orange')
+        ax1.scatter(Y_test, y_test_predict, label=f'Test (RSME = {np.round(rmse_test, 3)})', color = 'orange')
         ax1.legend()
 
         ax2.plot(abs(y_test_predict - Y_test), S_ptest, 'o', label='Test', color='orange')
         ax2.plot([0, S_ptest.max()], [0, S_ptest.max()], 'k:', label = 'Target')
-        ax2.legend()
+        # ax2.legend()
+        if self.output_type == 'P':
+            ax2.set_xlabel(r'True Error - $\mathcal{P}$')
+            ax2.set_ylabel(r'Predicted Error - $\mathcal{P}$')
+        elif self.output_type == 'T':
+            ax2.set_xlabel(r'True Error - $T_{hot} \,\, keV$')
+            ax2.set_ylabel(r'Predicted Error - $T_{hot} \,\, keV$')
+        elif self.output_type == 'E':
+            ax2.set_xlabel(r'True Error - $\mathcal{E}$')
+            ax2.set_ylabel(r'Predicted Error - $\mathcal{E}$')
 
         plt.subplots_adjust(left=0.1,
                             bottom=0.1, 

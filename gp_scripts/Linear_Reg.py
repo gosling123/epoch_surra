@@ -57,11 +57,15 @@ def Linear_Regression_fit(X, Y, basis, ax = None, degree = None, plot = True):
             plt.plot(X, Y_p, lw=2, label=f'LS prediction (Linear Basis)')
             plt.xlabel(r'$\mathrm{log}(L_n) $'); plt.ylabel(r'$\mathrm{log}(I_{thr})$'); plt.legend(loc='best');
             plt.fill_between(X.flatten(), Y_l, Y_u, color='C1', alpha=0.25)
+            plt.text(x = -7.35, y = 35.03, s = r'$\sigma_{MLE}$ = '+ str(np.round(sigma_MLE[0], 3)), fontsize = 25)
+            plt.text(x = -7.35, y = 35.07, s = r'$w_{MLE}$ = '+ str(np.round(w_MLE[0], 3)) + ' , ' +  str(np.round(w_MLE[1], 3)), fontsize = 25)
         else:
             ax.plot(X, Y, 'x', label='Observations')
             ax.plot(X, Y_p, lw=2, label=f'LS prediction (Linear Basis)')
             ax.set_xlabel(r'$\mathrm{log}(L_n) $'); ax.set_ylabel(r'$\mathrm{log}(I_{thr})$'); plt.legend(loc='best');
             ax.fill_between(X.flatten(), Y_l, Y_u, color='C1', alpha=0.25)
+            ax.text(x = -7.35, y = 35.03, s = r'$\sigma_{MLE}$ = '+ str(np.round(sigma_MLE[0], 3)), fontsize = 25)
+            ax.text(x = -7.35, y = 35.07, s = r'$w_{MLE}$ = '+ str(np.round(w_MLE[0], 3)) + ' , ' +  str(np.round(w_MLE[1], 3)), fontsize = 25)
         print('weights = ', w_MLE)
         print('sigma = ', sigma_MLE)
     else:

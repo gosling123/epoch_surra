@@ -101,7 +101,8 @@ def get_metrics_res(dir, input_fname = 'train_inputs.json', output_fname = 'trai
     T = hot_e_data.get_hot_e_temp(n = 6, av = True)
     time_T = time.time()
     print(f'Got Temperature In {time_T-time_P} seconds : T = {T} keV')
-    E_frac = hot_e_data.get_energy_frac()
+    # E_frac = hot_e_data.get_energy_frac()
+    E_frac = hot_e_data.get_energy_frac_bound(bounds = [100, 9999])
     time_E = time.time()
     print(f'Got E Fraction In {time_E-time_T} seconds : E_frac = {E_frac}')
     if log:
@@ -157,8 +158,8 @@ def get_metrics_res_ensemble(dirs):
         hot_e_data = hot_electron(dir = d)
         P = np.append(P, epoch_fields.get_flux_grid_av(ncells = 10, signal = 'bsrs', refelctivity = True))
         T = np.append(T, hot_e_data.get_hot_e_temp(n = 5, av = True))
-        E_frac = np.append(E_frac, hot_e_data.get_energy_frac())
-
+        # E_frac = np.append(E_frac, hot_e_data.get_energy_frac())
+        E_frac = np.append(E_frac, hot_e_data.get_energy_frac_bound(bounds = [100, 9999]))
     inputs = [np.mean(I), np.mean(Ln)]
     train_inputs.append(inputs)
     with open(fname_in, 'w') as f:
