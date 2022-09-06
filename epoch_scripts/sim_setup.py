@@ -209,7 +209,7 @@ def run_all_sub_dirs(dir, sub_dirs, time = '2:00:00', nodes = 1):
             f.write(f'sbatch run{i+1}.sbatch')
             f.write('\n')
 
-## epoch_sim_sub_dirs
+## hpc_run
 #
 # Creates epoch sim directories with sub directories and populates it with chosen input.deck format
 # and job script folder.

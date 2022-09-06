@@ -25,7 +25,7 @@ end:boundaries
 
 begin:laser
     boundary = x_min
-    intensity = 
+    intensity_w_cm2 = 
     omega = 5.36652868179e+15
     t_profile = semigauss(time,1.0,0.001,2.22734733238e-14)
 end:laser
