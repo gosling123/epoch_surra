@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import uniform_filter1d
 from scipy.interpolate import interp1d
 import csv
+import json
+import time
 
 
 
@@ -58,10 +60,8 @@ def read_input(dir, param):
                     continue
 
                 if param == 'intensity':
-                    #if words[0] == "intensity":
                     if words[0] == "intensity_w_cm2":
                         found = True
-#                         return float(words[2])/1e4
                         return float(words[2])
 
                 elif param == 'momentum':

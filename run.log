@@ -1,0 +1,31 @@
+[1m[34m
+
+
+
+        d########P  d########b        .######b          d#######  d##P      d##P
+       d########P  d###########    d###########     .##########  d##P      d##P 
+[36m      ----        ----     ----  -----     ----   -----         ----      --[34m P  
+     d########P  d####,,,####P ####.      .#### d###P          d############P   
+    d########P  d#########P   ####       .###P ####.          d############P    
+   d##P        d##P           ####     d####   ####.         d##P      d##P     
+  d########P  d##P            ###########P     ##########P  d##P      d##P      
+ d########P  d##P              d######P          #######P  d##P      d##P       
+
+[32m Welcome to EPOCH1D version 4.17.16   (commit v4.17.16-0-g3088d845-clean)
+
+[39m[0m The code was compiled with the following compile time options
+ *************************************************************
+ Per species weighting -DPER_SPECIES_WEIGHT
+ *************************************************************
+ Code is running on 4 processing elements
+
+ Specify output directory
+ Name of species 1 is electrons
+ Initial conditions complete and valid.
+Redistributing.          Balance: 0.929,     after: 1.000 (pre-load balance)
+ Attempting to load particles
+ Loaded 647301 particles of species "electrons"
+Skipping redistribution. Balance: 1.000                   (initial setup)
+
+ Equilibrium set up OK, running code
+

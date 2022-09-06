@@ -46,7 +46,7 @@ class hot_electron:
     # @param self : The object pointer
     # @param plot : (Logical) Plots the distribution function and equilibrium maxwellian normalised by their maxmium values.
     # @param log : (Logical) Plot y-axis set to log scale
-    def get_flux_dist(self,  plot = False, log = False):
+    def get_flux_dist(self,  ax = None, plot = False, log = False):
         files = glob.glob(self.directory+'probes_*.sdf') # provbe data files (probe near right-hand/exit boundary )
         self.E_data = np.array([]) # store energies of passing electrons
         for file in files:
@@ -70,17 +70,29 @@ class hot_electron:
 
         # plot                 
         if plot:
-            # Maxwellian at intiliased/background plasma temperature
-            MB = max_boltz_E(self.E_bins, self.epoch_data.Te*keV_to_K)
-            plt.plot(self.E_bins*J_tot_KeV, self.E_dist/self.E_dist.max(), label = 'Raw Data')
-            plt.plot(self.E_bins*J_tot_KeV, MB/MB.max(), label = 'MB', linestyle = '--', color = 'black')
-            plt.legend()
-            if log:
-                plt.yscale('log')
-            plt.xlabel(r'$E_e (keV)$')
-            plt.ylabel(r'$f_e(E)$')
-            plt.ylim(1e-4, 1e0)
-            plt.gcf().set_size_inches(10,6)
+            if ax == None:
+                # Maxwellian at intiliased/background plasma temperature
+                MB = max_boltz_E(self.E_bins, self.epoch_data.Te*keV_to_K)
+                plt.scatter(self.E_bins*J_tot_KeV, self.E_dist/self.E_dist.max(), label = f'Raw Data; I = {np.round(self.epoch_data.intensity*1e-15, 2)}' + r'$\times 10^{15} \,\, W/cm^2$ ', alpha = 0.6)
+                plt.plot(self.E_bins*J_tot_KeV, MB/MB.max(), label = r'$\phi_B (T = 4.5 \,\, keV)$', linestyle = '-', color = 'red')
+                plt.legend()
+                if log:
+                    plt.yscale('log')
+                plt.xlabel(r'$E (keV)$')
+                plt.ylabel(r'$E \cdot f(E)$')
+                plt.ylim(1e-3, 1.1e0)
+                plt.gcf().set_size_inches(10,6)
+            else:
+                # Maxwellian at intiliased/background plasma temperature
+                MB = max_boltz_E(self.E_bins, self.epoch_data.Te*keV_to_K)
+                ax.scatter(self.E_bins*J_tot_KeV, self.E_dist/self.E_dist.max(), label = f'Raw Data; I = {np.round(self.epoch_data.intensity*1e-15, 2)}' + r'$\times 10^{15} \,\, W/cm^2$ ', alpha = 0.6)
+                ax.plot(self.E_bins*J_tot_KeV, MB/MB.max(), label = r'$\phi_B (T = 4.5 \,\, keV)$', linestyle = '-', color = 'red')
+                ax.legend()
+                if log:
+                    ax.set_yscale('log')
+                ax.set_xlabel(r'$E (keV)$')
+                ax.set_ylabel(r'$E \cdot f(E)$')
+                ax.set_ylim(1e-3, 1.1e0)
             return None
         else:
             return self.E_bins, self.E_dist
@@ -92,7 +104,7 @@ class hot_electron:
     # @param n : Number of segments.
     # @param plot : (Logical) Plots the split segemnts.
     # @param log : (Logical) Plot y-axis set to log scale
-    def split_dist(self, n, plot = False, log = False):
+    def split_dist(self, n, ax = None, plot = False, log = False):
         # Enforce that n is a positive integer
         if not isinstance(n,int) or (n < 1):
             raise Exception("ERROR: n argument must be an integer > 0")
@@ -146,13 +158,21 @@ class hot_electron:
 
         # Plot result
         if plot:
-            for e, f in zip(self.E_parts, self.flux_parts):
-                plt.plot(e*J_tot_KeV, f)
-            if log:
-                plt.yscale('log')
-            plt.xlabel(r'$E_e (keV)$')
-            plt.ylabel(r'$f_e(E)$')
-            plt.gcf().set_size_inches(10,6)
+            if ax == None:
+                for e, f in zip(self.E_parts, self.flux_parts):
+                    plt.plot(e*J_tot_KeV, f)
+                if log:
+                    plt.yscale('log')
+                plt.xlabel(r'$E (keV)$')
+                plt.ylabel(r'$\phi_h(E)$')
+                plt.gcf().set_size_inches(10,6)
+            else:
+                for e, f in zip(self.E_parts, self.flux_parts):
+                    ax.plot(e*J_tot_KeV, f)
+                if log:
+                    ax.set_yscale('log')
+                ax.set_xlabel(r'$E (keV)$')
+                ax.set_ylabel(r'$\phi_h(E)$')
             return None
         else:
             return self.E_parts, self.flux_parts
@@ -165,7 +185,7 @@ class hot_electron:
     # @param n : Number of segments.
     # @param plot : (Logical) Plots the fits and loss functions.
     # @param log : (Logical) Plot y-axis set to log scale
-    def fit_maxwellians(self, n, plot = False, log = False):  
+    def fit_maxwellians(self, n = 5, plot = False, log = False):  
         # Enforce that n is a positive integer      
         if not isinstance(n,int) or (n < 1):
             raise Exception("ERROR: n argument must be an integer > 0")
@@ -225,23 +245,24 @@ class hot_electron:
                 ax1.plot(temps, l)
                 ax1.set_xlabel(r'$T (keV)$')
                 ax1.set_ylabel(r'Normed Loss Function')
+                ax1.set_xlim(0, 100)
             
             for i,f in enumerate(self.scaled_fits):
-                ax2.plot(E_parts[i]*J_tot_KeV, f, label = r'$A$ = ' + str(np.round(self.amplitudes[i], 8)) + ', $T$ = ' + str(np.round(self.T_vals[i], 3)) + ' keV')
-            ax2.scatter(E_plot*J_tot_KeV, flux_plot, color = 'black', label = 'Data')
+                ax2.plot(E_parts[i]*J_tot_KeV, f, label = r'$A$ = ' + str(np.round(self.amplitudes[i]/self.amplitudes.max(), 3)) + ', $T$ = ' + str(np.round(self.T_vals[i], 2)) + ' keV')
+            ax2.scatter(E_plot*J_tot_KeV, flux_plot, color = 'black', label = 'Data', alpha = 0.2)
             ax2.set_xlabel(r'$E (keV)$')
-            ax2.set_ylabel(r'$f_e(E)$')
+            ax2.set_ylabel(r'$\phi_h(E)$')
             ax2.legend()
 
             ax3.scatter(E_plot*J_tot_KeV, flux_plot, color = 'black', label = 'Data')
             ax3.plot(E_plot*J_tot_KeV, self.final_fit, color = 'red', label = 'Fit')
             ax3.set_xlabel(r'$E (keV)$')
-            ax3.set_ylabel(r'$f_e(E)$')
+            ax3.set_ylabel(r'$\phi_h(E)$')
             ax3.legend()
             if log:
                 ax2.set_yscale('log')
                 ax3.set_yscale('log')
-            plt.gcf().set_size_inches(25,25)
+            plt.gcf().set_size_inches(30,10)
         if plot:
             return None
         else:
@@ -255,7 +276,7 @@ class hot_electron:
     # @param self : The object pointer
     # @param n : Number of plots.
     # @param av : (Logical) Finds the average value of temperature for all fits ranging from 1 to n.
-    def get_hot_e_temp(self, n = 5, av = True, plot = False):
+    def get_hot_e_temp(self, n = 5, av = True, ax = None, plot = False):
         if not isinstance(n,int) or (n < 1):
             raise Exception("ERROR: n argument must be an integer > 0")
 
@@ -267,20 +288,28 @@ class hot_electron:
         if av:
             nfits = np.arange(1, n+1)
             T_data = []
-            for n in nfits:
-                T_vals, A, fits, fits_full = self.fit_maxwellians(n = n, plot = False)
+            for i in range(1, n+1):
+                T_vals, A, fits, fits_full = self.fit_maxwellians(n = int(i), plot = False)
                 T_est = np.average(T_vals, weights = A)
                 T_data.append(T_est)
-            self.T_hot_av = np.average(T_data[:])
+            self.T_hot_av = np.average(T_data[1:])
         # Plot T vs number of fits
         if plot:
-            plt.plot(nfits, T_data, '-o', label = 'Data')
-            plt.xlabel(r'$N$ Fits')
-            plt.ylabel(r'$T_{hot}$')
-            plt.xlim(1, n)
-            plt.axhline(self.T_hot_av, color ='red', ls = '--', label = 'Average')
-            plt.gcf().set_size_inches(8,6)
-            plt.legend()
+            if ax == None:
+                plt.plot(nfits, T_data, '-o', label = 'Data')
+                plt.xlabel(r'$N$ Fits')
+                plt.ylabel(r'$T_{hot}$ (keV)')
+                plt.xlim(1, n)
+                plt.axhline(self.T_hot_av, color ='red', ls = '--', label = 'Average')
+                plt.gcf().set_size_inches(8,6)
+                plt.legend()
+            else:
+                ax.plot(nfits, T_data, '-o', label = 'Data')
+                ax.set_xlabel(r'$N$ Fits')
+                ax.set_ylabel(r'$T_{hot}$ (keV)')
+                ax.set_xlim(1, n)
+                ax.axhline(self.T_hot_av, color ='red', ls = '--', label = 'Average')
+                ax.legend()
         if av:
             if plot:
                 return None
@@ -301,10 +330,10 @@ class hot_electron:
         E_h, f_h = self.split_dist(n = 1) # Hot electron region
         E, f = self.get_flux_dist() # Whole domain
         if self.idx == 0:
-            E_hot_frac = 0 # If there is said to be no hot electron region, set to zero
-            return self.E_hot_frac
+            E_hot_frac = 1e-10 # If there is said to be no hot electron region, set to zero
+            return E_hot_frac
         else:
-            E_hot_frac = np.trapz(y=f[self.idx:]*E[self.idx:], x =E[self.idx:]) / np.trapz(y=f*E, x =E)
+            E_hot_frac = np.trapz(y=f[self.idx:]/E[self.idx:], x =E[self.idx:]) / np.trapz(y=f/E, x =E)
             return E_hot_frac
 
     ## get_energy_frac_bound
@@ -317,7 +346,14 @@ class hot_electron:
             raise ValueError('ERROR: bounds must specify start and stop energies')
         if bounds[1] < bounds[0]:
             raise ValueError('ERROR: bounds must be in ascending order')
+        if bounds[1] < 0 or bounds[0] < 0:
+            raise ValueError('ERROR: bounds must be greater than 0')
         E, f = self.get_flux_dist()
-        idx = np.where(bounds[0] <= E*J_tot_KeV < bounds[1])[0]
-        res = np.trapz(y=f[idx:]*E[idx:], x =E[idx:]) / np.trapz(y=f*E, x =E)
+        idx1 = np.where(bounds[0] <= E*J_tot_KeV)[0]
+        if len(idx1) == 0:
+            return np.random.random(1)[0]*1e-10
+        else:
+            idx1 = idx1[0]
+        idx2 = np.where(E*J_tot_KeV <= bounds[1])[0][-1]
+        res = np.trapz(y=f[idx1:idx2], x =E[idx1:idx2]) / np.trapz(y=f, x =E)
         return res

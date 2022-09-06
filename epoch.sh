@@ -34,12 +34,12 @@ if [[ $3 == 'log' ]]; then
     export OMP_NUM_THREADS=1
     # nohup echo ${dir} | mpiexec -n ${np} ./bin/epoch1d > run.log &
     # cat nohup.out
-    echo ${dir} | mpiexec -n ${np} ./bin/epoch1d > run.log
+    echo ${dir} | mpiexec -n ${np} $EPOCH1D_EXE > run.log
 
 else
     export OMP_NUM_THREADS=1
     # nohup echo ${dir} | mpiexec -n ${np} ./bin/epoch1d &
     # cat nohup.out
-    echo ${dir} | mpiexec -n ${np} ./bin/epoch1d
+    echo ${dir} | mpiexec -n ${np} $EPOCH1D_EXE
 fi
 

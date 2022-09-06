@@ -1,0 +1,102 @@
+begin:constant
+# PLASMA parameters
+   omega0 = 5.36652868179e+15                        # Laser frequency
+   ne_max = 0.25 * critical(omega0)                  # Electron number density at right-most cell
+   Ln = 
+   Lx = 100 * micron                                 # Domain size
+   ne_min = ne_max * exp(-Lx / Ln)                   # Electron number density at left-most cell
+   temperature_in_ev = 4.5e3                         # Electron temperature in eV
+   vte = sqrt(temperature_in_ev * ev/me)             # Thermal velocity
+   e_te = 0.5 * me * vte*vte                         # Electron thermal energy [J]
+   PPC = 
+end:constant
+
+begin:control
+  smooth_currents = T
+  nx = 6500
+  use_random_seed = T
+  t_end = 2 * pico
+  x_min = 0
+  x_max = Lx
+end:control
+
+begin:boundaries
+    bc_x_max_field = simple_outflow
+    bc_x_max_particle = thermal
+    bc_x_min_field = simple_laser
+    bc_x_min_particle = thermal
+end:boundaries
+
+begin:laser
+    boundary = x_min
+    intensity_w_cm2 = 
+    omega = omega0
+    t_profile = semigauss(time,1.0,0.001,2.22734733238e-14)
+end:laser
+
+begin:species
+  name = electrons
+  charge = -1.0
+  mass = 1.0
+  temp = 52220349.2718
+  density = ne_min*exp(x/Ln)
+  nparticles_per_cell = PPC
+  dumpmask = always
+end:species
+
+begin:dist_fn
+  name = x_px
+  ndims = 1
+  dumpmask = always
+  direction1 = dir_px
+  range1 = (-2.73092448831719e-22, 2.73092448831719e-22)
+  resolution1 = 3200
+  include_species: electrons
+end:dist_fn
+
+# PROBE FOR OUTGOING ELECTRONS
+begin:probe
+   name = outgoing_e_probe_
+   dumpmask = always
+   ek_min = 0
+   ek_max = -1
+   include_species = electrons
+   point = x_max - 5*dx
+   normal = 1.0
+end:probe
+
+
+# LEFT BOUNDARY
+
+begin:subset
+   name = x_left
+   x_min = 5 * dx
+   x_max = 6 * dx
+end:subset
+
+begin:output
+  dt_snapshot = 2 * pico / 4000
+  name = fields
+  file_prefix = fields_
+  ex = always
+  ey = always
+  bz = always
+end:output
+
+begin:output
+  dt_snapshot = 2 * pico / 1
+  name = grid_data
+  file_prefix = grid_data_
+  grid = always
+  number_density = always + species
+  temperature = always + species
+end:output
+
+
+begin:output
+   file_prefix = probes_
+   name = probes
+   dt_snapshot = 100*femto
+   particle_probes = always
+   dump_first = F
+end:output
